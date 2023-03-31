@@ -6,6 +6,7 @@ import attr
 from attr.validators import instance_of as io
 import uuid
 from datetime import date
+from enum import Enum
 
 
 @attr.s
@@ -380,7 +381,7 @@ class SizingConfig(object):
     clusters = attr.ib(validator=io(list))
 
     @classmethod
-    def from_config(cls, cluster_config: ClusterConfig):
+    def from_config(cls, name: str, cluster_config: ClusterConfig):
         today = date.today()
         return cls(
             str(uuid.uuid4()),
@@ -390,7 +391,79 @@ class SizingConfig(object):
             "",
             today.strftime("%-m/%-d/%Y"),
             "2.2.1",
+            [SizingCluster.build(name).as_dict],
+            )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+class ClusterType(Enum):
+    CAPELLA = "Capella"
+    ON_PREM = "Self-Managed"
+
+
+class ClusterVersion(Enum):
+    V7_0 = "7.0"
+    V7_1 = "7.1"
+
+
+class CapellaPlan(Enum):
+    BASIC = "Basic"
+    PRO = "Developer Pro"
+    ENTERPRISE = "Enterprise"
+
+
+class CloudProvider(Enum):
+    AWS = "aws"
+    GCP = "gcp"
+    AZURE = "azure"
+
+
+class CloudRegion(Enum):
+    aws = "us-east-1"
+    gcp = "us-east1"
+    azure = "eastus"
+
+
+class ClusterInfrastructure(Enum):
+    CLOUD = "AWS"
+    ON_PREM = "Virtual Machines"
+
+
+@attr.s
+class SizingCluster(object):
+    id = attr.ib(validator=io(str))
+    name = attr.ib(validator=io(str))
+    type = attr.ib(validator=io(str))
+    couchbase_version = attr.ib(validator=io(str))
+    cloud_provider = attr.ib(validator=io(str))
+    cloud_region = attr.ib(validator=io(str))
+    capella_plan = attr.ib(validator=io(str))
+    infrastructure = attr.ib(validator=io(str))
+    operating_system = attr.ib(validator=io(str))
+    capella_credits = attr.ib(validator=io(int))
+    services = attr.ib(validator=io(dict))
+    service_groups = attr.ib(validator=io(list))
+    cloud_service = attr.ib(default=None)
+
+    @classmethod
+    def build(cls, name: str):
+        return cls(
+            str(uuid.uuid4()),
+            name,
+            ClusterType.CAPELLA.value,
+            ClusterVersion.V7_1.value,
+            CloudProvider.AWS.value,
+            CloudRegion[CloudProvider.AWS.value].value,
+            CapellaPlan.PRO.value,
+            ClusterInfrastructure.CLOUD.value,
+            "Linux",
+            0,
+            {},
             [],
+            None
             )
 
     @property

@@ -20,6 +20,7 @@ class RunMain(object):
         self.input_file = parameters.input
         self.output_file = parameters.output
         self.data = {}
+        self.name = parameters.name
         self.read_file()
 
     def read_file(self) -> None:
@@ -32,7 +33,7 @@ class RunMain(object):
     def process(self):
         logger.info(f"Create Sizer Import ({VERSION})")
         config = ClusterConfig.from_config(self.data)
-        sizing = SizingConfig.from_config(config)
+        sizing = SizingConfig.from_config(self.name, config)
         print(json.dumps(sizing.as_dict, indent=2))
 
 
