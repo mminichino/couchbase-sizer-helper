@@ -7,7 +7,7 @@ import logging
 from lib.args import Parameters
 from lib.logging import CustomFormatter
 from lib.exceptions import InputFileReadError
-from lib.sizing import ClusterConfig
+from lib.sizing import ClusterConfig, SizingConfig
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger()
@@ -31,8 +31,9 @@ class RunMain(object):
 
     def process(self):
         logger.info(f"Create Sizer Import ({VERSION})")
-        sizing = ClusterConfig.from_config(self.data)
-        print(sizing.data[0].hostname)
+        config = ClusterConfig.from_config(self.data)
+        sizing = SizingConfig.from_config(config)
+        print(json.dumps(sizing.as_dict, indent=2))
 
 
 def main():

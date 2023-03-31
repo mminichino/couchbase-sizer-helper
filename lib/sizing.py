@@ -4,6 +4,8 @@
 import attr
 # from typing import Union
 from attr.validators import instance_of as io
+import uuid
+from datetime import date
 
 
 @attr.s
@@ -378,16 +380,17 @@ class SizingConfig(object):
     clusters = attr.ib(validator=io(list))
 
     @classmethod
-    def from_config(cls, json_data: dict):
+    def from_config(cls, cluster_config: ClusterConfig):
+        today = date.today()
         return cls(
-            json_data.get("id"),
-            json_data.get("name"),
-            json_data.get("account"),
-            json_data.get("application"),
-            json_data.get("username"),
-            json_data.get("date"),
-            json_data.get("sizing_version"),
-            json_data.get("clusters"),
+            str(uuid.uuid4()),
+            "Sizing",
+            "",
+            "",
+            "",
+            today.strftime("%-m/%-d/%Y"),
+            "2.2.1",
+            [],
             )
 
     @property
