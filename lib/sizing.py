@@ -2,6 +2,7 @@
 ##
 
 import attr
+import ast
 # from typing import Union
 from attr.validators import instance_of as io
 import uuid
@@ -381,7 +382,7 @@ class SizingConfig(object):
     clusters = attr.ib(validator=io(list))
 
     @classmethod
-    def from_config(cls, name: str, cluster_config: ClusterConfig):
+    def from_config(cls, cluster: dict):
         today = date.today()
         return cls(
             str(uuid.uuid4()),
@@ -391,7 +392,7 @@ class SizingConfig(object):
             "",
             today.strftime("%-m/%-d/%Y"),
             "2.2.1",
-            [SizingCluster.build(name).as_dict],
+            [cluster],
             )
 
     @property
@@ -466,6 +467,341 @@ class SizingCluster(object):
             None
             )
 
+    def service(self, service: dict):
+        self.services.update(service)
+        return self
+
     @property
     def as_dict(self):
         return self.__dict__
+
+
+@attr.s
+class SizingClusterBuckets(object):
+    buckets = attr.ib(validator=io(list))
+
+    @classmethod
+    def build(cls):
+        return cls(
+            []
+        )
+
+    def bucket(self, bucket: dict):
+        self.buckets.append(bucket)
+        return self
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingClusterData(object):
+    data = attr.ib(validator=io(dict))
+
+    @classmethod
+    def build(cls):
+        return cls(
+            {}
+        )
+
+    def bucket(self, buckets: dict):
+        self.data.update(buckets)
+        return self
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingClusterBucket(object):
+    id = attr.ib(validator=io(str))
+    name = attr.ib(validator=io(str))
+    description = attr.ib(validator=io(str))
+    bucket_type = attr.ib(validator=io(str))
+    storage_engine = attr.ib(validator=io(str))
+    eviction_policy = attr.ib(validator=io(str))
+    value_format = attr.ib(validator=io(str))
+    purge_frequency = attr.ib(validator=io(int))
+    number_replicas = attr.ib(validator=io(int))
+    default_compression = attr.ib(validator=io(bool))
+    in_memory_compression_ratio = attr.ib(validator=io(float))
+    on_disk_compression_ratio = attr.ib(validator=io(float))
+    scopes = attr.ib(validator=io(list))
+
+    @classmethod
+    def build(cls, bucket_id: str, name: str, config: ClusterConfigData):
+        ratio = config.compression_ratio
+        compression = ratio / 100
+        return cls(
+            bucket_id,
+            name,
+            "Imported Bucket",
+            "Couchbase",
+            "Couchstore",
+            "Value",
+            "JSON/Text",
+            3,
+            1,
+            True,
+            compression,
+            compression,
+            []
+        )
+
+    def scope(self, scope: dict):
+        self.scopes.append(scope)
+        return self
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingClusterScope(object):
+    id = attr.ib(validator=io(str))
+    name = attr.ib(validator=io(str))
+    collections = attr.ib(validator=io(list))
+
+    @classmethod
+    def build(cls, scope_id: str, name: str):
+        return cls(
+            scope_id,
+            name,
+            []
+        )
+
+    def collection(self, collection: dict):
+        self.collections.append(collection)
+        return self
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingClusterCollection(object):
+    id = attr.ib(validator=io(str))
+    name = attr.ib(validator=io(str))
+    description = attr.ib(validator=io(str))
+    total_documents_keys = attr.ib(validator=io(int))
+    working_set = attr.ib(validator=io(float))
+    avg_key_id_size = attr.ib(validator=io(int))
+    avg_document_size = attr.ib(validator=io(int))
+    read_ops_per_sec = attr.ib(validator=io(float))
+    write_ops_per_sec = attr.ib(validator=io(float))
+    delete_ops_per_sec = attr.ib(validator=io(float))
+    ttl_expiration = attr.ib(validator=io(int))
+    outbound_xdcr_streams = attr.ib(validator=io(int))
+    inbound_xdcr_streams = attr.ib(validator=io(int))
+    xdcr_active_active = attr.ib(validator=io(bool))
+    uses_gsi = attr.ib(validator=io(bool))
+    use_bucket_compression = attr.ib(validator=io(bool))
+    in_memory_compression_ratio = attr.ib(validator=io(float))
+    on_disk_compression_ratio = attr.ib(validator=io(float))
+
+    @classmethod
+    def from_config(cls, collection_id: str, name: str, count: int, config: ClusterConfigData):
+        ratio = config.compression_ratio
+        compression = ratio / 100
+        return cls(
+            collection_id,
+            name,
+            "Imported Collection",
+            int(count),
+            config.resident_ratio / 100,
+            int(config.avg_key_size),
+            int(config.avg_value_size),
+            float(config.avg_cmd_get),
+            float(config.avg_cmd_set),
+            float(config.avg_delete_hits),
+            0,
+            0,
+            0,
+            False,
+            False,
+            True,
+            compression,
+            compression
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingClusterIndex(object):
+    index = attr.ib(validator=io(dict))
+
+    @classmethod
+    def build(cls):
+        return cls(
+            {}
+        )
+
+    def indexes(self, indexes: dict):
+        self.index.update(indexes)
+        return self
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingClusterPlasmaIndexes(object):
+    index_type = attr.ib(validator=io(str))
+    indexes = attr.ib(validator=io(list))
+    config = attr.ib(validator=io(dict))
+
+    @classmethod
+    def build(cls):
+        return cls(
+            "plasma",
+            [],
+            SizingClusterConfigBlock.create().as_contents
+        )
+
+    def index(self, index: dict):
+        self.indexes.append(index)
+        return self
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingClusterIndexEntry(object):
+    id = attr.ib(validator=io(str))
+    name = attr.ib(validator=io(str))
+    description = attr.ib(validator=io(str))
+    bucket = attr.ib(validator=io(str))
+    scope = attr.ib(validator=io(str))
+    collection = attr.ib(validator=io(str))
+    primary_index = attr.ib(validator=io(bool))
+    resident_ratio = attr.ib(validator=io(float))
+    total_secondary_bytes = attr.ib(validator=io(int))
+    array_index_size_of_each_element = attr.ib(validator=io(int))
+    array_length = attr.ib(validator=io(int))
+    number_replicas = attr.ib(validator=io(int))
+    percentage_documents_in_index = attr.ib(validator=io(int))
+    avg_index_scans_per_sec = attr.ib(validator=io(int))
+    plasma_key_size = attr.ib(validator=io(int))
+    purge_ratio = attr.ib(validator=io(float))
+    compression = attr.ib(validator=io(float))
+    compression_ratio = attr.ib(validator=io(float))
+    jemalloc_fragmentation = attr.ib(validator=io(float))
+
+    @classmethod
+    def from_config(cls, index_id: str, bucket: str, scope: str, collection: str, replica: int, config: ClusterConfigIndexes):
+        ratio = config.resident_percent
+        resident_ratio = ratio / 100
+        plasma_key_size = cls.calc_dist_value(config.key_size_distribution)
+        if config.definition.startswith("CREATE PRIMARY INDEX"):
+            primary_index = True
+            total_secondary_bytes = 0
+            array_index_size_of_each_element = 0
+            array_length = 0
+        else:
+            primary_index = False
+            total_secondary_bytes = plasma_key_size
+            if len(config.arrkey_size_distribution) > 0:
+                array_index_size_of_each_element = cls.calc_dist_value(config.arrkey_size_distribution)
+            else:
+                array_index_size_of_each_element = 0
+            array_length = config.avg_array_length
+        return cls(
+            index_id,
+            config.indexName,
+            "Imported Index",
+            bucket,
+            scope,
+            collection,
+            primary_index,
+            resident_ratio,
+            total_secondary_bytes,
+            array_index_size_of_each_element,
+            array_length,
+            replica,
+            1,
+            config.avg_scan_rate,
+            plasma_key_size,
+            0.2,
+            0.5,
+            0.25,
+            0.4
+        )
+
+    @staticmethod
+    def calc_dist_value(text: str) -> int:
+        s = text
+        s = s.replace('(', '"(')
+        s = s.replace(')', ')"')
+        s = '{' + s
+        s = s + '}'
+        dist = ast.literal_eval(s)
+        highest = [k for k, v in sorted(dist.items(), key=lambda item: item[1])][-1]
+        value = highest.split('-')[-1].strip(')')
+        return int(value)
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingClusterConfigBlock(object):
+    config = attr.ib(validator=io(dict))
+
+    @classmethod
+    def create(cls):
+        return cls(
+            {
+                "os_mem_reserved": 0.2,
+                "minimum_number_of_cores": 8,
+                "disk_space_buffer": 0.3,
+                "core_headroom": 0.2,
+                "memory_growth_headroom": 0.1
+            }
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+    @property
+    def as_contents(self):
+        return self.__dict__['config']
+
+
+@attr.s
+class SizingClusterQuery(object):
+    query = attr.ib(validator=io(dict))
+
+    @classmethod
+    def create(cls):
+        scan_set = set([i.avg_scan_rate for i in data])
+        return cls(
+            {
+                "simple_query_stale_ok": 0,
+                "simple_query_stale_false": 0,
+                "medium_query_stale_ok": 100,
+                "medium_query_stale_false": 0,
+                "complex_query_stale_ok": 0,
+                "complex_query_stale_false": 0,
+                "config": SizingClusterConfigBlock.create().as_contents
+            }
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+    @property
+    def as_contents(self):
+        return self.__dict__['query']
