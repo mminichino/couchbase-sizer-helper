@@ -103,7 +103,7 @@ class ClusterConfigData(object):
     avg_cmd_set = attr.ib(validator=attr.validators.instance_of((int, float)))
     avg_delete_hits = attr.ib(validator=attr.validators.instance_of((int, float)))
     avg_key_size = attr.ib(validator=io(int))
-    avg_value_size = attr.ib(validator=io(float))
+    avg_value_size = attr.ib(validator=io(int))
     memory_utilization_percent = attr.ib(validator=io(float))
     resident_ratio = attr.ib(validator=io(int))
     compression_ratio = attr.ib(validator=io(float))
@@ -163,10 +163,10 @@ class ClusterConfigData(object):
             json_data.get("avg_cmd_set"),
             json_data.get("avg_delete_hits"),
             int(json_data.get("avg_key_size")),
-            json_data.get("avg_value_size"),
+            int(json_data.get("avg_value_size")),
             json_data.get("memory_utilization_percent"),
             json_data.get("resident_ratio"),
-            json_data.get("compression_ratio"),
+            float(json_data.get("compression_ratio")),
             json_data.get("metadata_utilization_percent"),
             json_data.get("total_metadata_memory"),
             )
