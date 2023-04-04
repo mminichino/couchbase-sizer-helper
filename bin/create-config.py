@@ -4,11 +4,12 @@ import json
 import warnings
 import sys
 import logging
+from datetime import datetime
 from lib.args import Parameters
 from lib.logging import CustomFormatter
-from lib.exceptions import InputFileReadError
+from lib.exceptions import InputFileReadError, OutputFileWriteError
 from lib.sizing import (ClusterConfig, SizingConfig, SizingCluster, SizingClusterData, SizingClusterBuckets, SizingClusterBucket, SizingClusterScope, SizingClusterCollection,
-                        SizingClusterIndex, SizingClusterIndexEntry, SizingClusterPlasmaIndexes, SizingClusterQuery)
+                        SizingClusterIndex, SizingClusterIndexEntry, SizingClusterPlasmaIndexes, SizingClusterQuery, SizingServiceGroup)
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger()
@@ -22,6 +23,7 @@ class RunMain(object):
         self.output_file = parameters.output
         self.data = {}
         self.name = parameters.name
+        self.skip = parameters.skip
         self.read_file()
 
     def read_file(self) -> None:
@@ -30,6 +32,13 @@ class RunMain(object):
                 self.data = json.load(input_file)
         except Exception as err:
             raise InputFileReadError(f"can not read sizing file {self.input_file}: {err}")
+
+    def write_file(self, data: dict) -> None:
+        try:
+            with open(self.output_file, 'w') as output_file:
+                json.dump(data, output_file, indent=2)
+        except Exception as err:
+            raise OutputFileWriteError(f"can not write output file {self.output_file}: {err}")
 
     def process(self):
         bucket_map = {}
@@ -76,7 +85,10 @@ class RunMain(object):
         data.bucket(buckets.as_dict)
         cluster.service(data.as_dict)
 
+        cluster.service_group(SizingServiceGroup.create(["data"], "aws").as_dict)
+
         if len(config.indexes) > 0:
+            epoch_time = datetime(1970, 1, 1)
             index = SizingClusterIndex.build()
             indexes = SizingClusterPlasmaIndexes.build()
             replica_set = set([i.indexName for i in config.indexes if i.replicaId > 0])
@@ -84,6 +96,10 @@ class RunMain(object):
             for item in config.indexes:
                 if item.replicaId > 0:
                     continue
+                last_scanned = datetime.strptime(item.last_known_scan_time, '%Y-%m-%dT%H:%M:%S')
+                if (last_scanned.timestamp() - epoch_time.timestamp()) == 0:
+                    if self.skip:
+                        continue
                 bucket = bucket_map[item.bucket]
                 scope = bucket_scope_map[item.bucket][item.scope]
                 collection = bucket_collection_map[item.bucket][item.scope][item.collection]
@@ -96,10 +112,11 @@ class RunMain(object):
                 index_count += 1
             index.indexes(indexes.as_dict)
             cluster.service(index.as_dict)
-            cluster.service(SizingClusterQuery.create(config.indexes).as_dict)
+            cluster.service(SizingClusterQuery.create().as_dict)
+            cluster.service_group(SizingServiceGroup.create(["index", "query"], "aws").as_dict)
 
         sizing = SizingConfig.from_config(cluster.as_dict)
-        print(json.dumps(sizing.as_dict, indent=2))
+        self.write_file(sizing.as_dict)
 
 
 def main():

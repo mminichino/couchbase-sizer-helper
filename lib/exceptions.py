@@ -33,3 +33,7 @@ class NonFatalError(Exception):
 
 class InputFileReadError(FatalError):
     pass
+
+
+class OutputFileWriteError(FatalError):
+    pass

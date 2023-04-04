@@ -3,7 +3,6 @@
 
 import attr
 import ast
-# from typing import Union
 from attr.validators import instance_of as io
 import uuid
 from datetime import date
@@ -433,6 +432,33 @@ class ClusterInfrastructure(Enum):
     ON_PREM = "Virtual Machines"
 
 
+class CloudHardware(Enum):
+    aws = {
+        "instance": "c5.2xlarge",
+        "cpu": 8,
+        "ram": 16,
+        "disk_type": "gp3",
+        "disk_io": 3000,
+        "network": 1
+    }
+    gcp = {
+        "instance": "n2-standard-8",
+        "cpu": 8,
+        "ram": 32,
+        "disk_type": "pd-ssd",
+        "disk_io": 3000,
+        "network": 1
+    }
+    azure = {
+        "instance": "Standard_D8s_v5",
+        "cpu": 8,
+        "ram": 32,
+        "disk_type": "P6",
+        "disk_io": 240,
+        "network": 1
+    }
+
+
 @attr.s
 class SizingCluster(object):
     id = attr.ib(validator=io(str))
@@ -469,6 +495,10 @@ class SizingCluster(object):
 
     def service(self, service: dict):
         self.services.update(service)
+        return self
+
+    def service_group(self, group: dict):
+        self.service_groups.append(group)
         return self
 
     @property
@@ -785,12 +815,11 @@ class SizingClusterQuery(object):
 
     @classmethod
     def create(cls):
-        scan_set = set([i.avg_scan_rate for i in data])
         return cls(
             {
                 "simple_query_stale_ok": 0,
                 "simple_query_stale_false": 0,
-                "medium_query_stale_ok": 100,
+                "medium_query_stale_ok": 0,
                 "medium_query_stale_false": 0,
                 "complex_query_stale_ok": 0,
                 "complex_query_stale_false": 0,
@@ -805,3 +834,45 @@ class SizingClusterQuery(object):
     @property
     def as_contents(self):
         return self.__dict__['query']
+
+
+@attr.s
+class SizingServiceGroups(object):
+    service_groups = attr.ib(validator=io(list))
+
+    @classmethod
+    def build(cls):
+        return cls(
+            []
+        )
+
+    def add(self, group: dict):
+        self.service_groups.append(group)
+        return self
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+    @property
+    def as_contents(self):
+        return self.__dict__['service_groups']
+
+
+@attr.s
+class SizingServiceGroup(object):
+    id = attr.ib(validator=io(str))
+    services = attr.ib(validator=io(list))
+    hardware = attr.ib(validator=io(dict))
+
+    @classmethod
+    def create(cls, services: list, cloud: str):
+        return cls(
+            str(uuid.uuid4()),
+            services,
+            CloudHardware[cloud].value
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
