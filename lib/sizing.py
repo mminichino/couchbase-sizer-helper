@@ -425,11 +425,21 @@ class CloudRegion(Enum):
     aws = "us-east-1"
     gcp = "us-east1"
     azure = "eastus"
+    vm = ""
+
+
+class CloudService(Enum):
+    aws = "EC2"
+    gcp = "Compute Engine"
+    azure = "Virtual Machine"
+    vm = None
 
 
 class ClusterInfrastructure(Enum):
-    CLOUD = "AWS"
-    ON_PREM = "Virtual Machines"
+    aws = "AWS"
+    gcp = "GCP"
+    azure = "Azure"
+    vm = "Virtual Machines"
 
 
 class CloudHardware(Enum):
@@ -457,6 +467,14 @@ class CloudHardware(Enum):
         "disk_io": 240,
         "network": 1
     }
+    vm = {
+        "instance": "Custom",
+        "cpu": 8,
+        "ram": 32,
+        "disk_type": "SSD",
+        "disk_io": 10000,
+        "network": 1
+    }
 
 
 @attr.s
@@ -476,21 +494,25 @@ class SizingCluster(object):
     cloud_service = attr.ib(default=None)
 
     @classmethod
-    def build(cls, name: str):
+    def build(cls, name: str, cloud: str, self_managed: bool):
+        if self_managed:
+            cluster_type = ClusterType.ON_PREM.value
+        else:
+            cluster_type = ClusterType.CAPELLA.value
         return cls(
             str(uuid.uuid4()),
             name,
-            ClusterType.CAPELLA.value,
+            cluster_type,
             ClusterVersion.V7_1.value,
-            CloudProvider.AWS.value,
-            CloudRegion[CloudProvider.AWS.value].value,
+            cloud,
+            CloudRegion[cloud].value,
             CapellaPlan.PRO.value,
-            ClusterInfrastructure.CLOUD.value,
+            ClusterInfrastructure[cloud].value,
             "Linux",
             0,
             {},
             [],
-            None
+            CloudService[cloud].value
             )
 
     def service(self, service: dict):

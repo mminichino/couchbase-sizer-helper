@@ -24,6 +24,8 @@ class RunMain(object):
         self.data = {}
         self.name = parameters.name
         self.skip = parameters.skip
+        self.cloud = parameters.cloud
+        self.self_managed = parameters.self
         self.read_file()
 
     def read_file(self) -> None:
@@ -47,7 +49,7 @@ class RunMain(object):
 
         logger.info(f"Create Sizer Import ({VERSION})")
         config = ClusterConfig.from_config(self.data)
-        cluster = SizingCluster.build(self.name)
+        cluster = SizingCluster.build(self.name, self.cloud, self.self_managed)
         data = SizingClusterData.build()
         buckets = SizingClusterBuckets.build()
 
@@ -85,7 +87,7 @@ class RunMain(object):
         data.bucket(buckets.as_dict)
         cluster.service(data.as_dict)
 
-        cluster.service_group(SizingServiceGroup.create(["data"], "aws").as_dict)
+        cluster.service_group(SizingServiceGroup.create(["data"], self.cloud).as_dict)
 
         if len(config.indexes) > 0:
             epoch_time = datetime(1970, 1, 1)
@@ -113,7 +115,7 @@ class RunMain(object):
             index.indexes(indexes.as_dict)
             cluster.service(index.as_dict)
             cluster.service(SizingClusterQuery.create().as_dict)
-            cluster.service_group(SizingServiceGroup.create(["index", "query"], "aws").as_dict)
+            cluster.service_group(SizingServiceGroup.create(["index", "query"], self.cloud).as_dict)
 
         sizing = SizingConfig.from_config(cluster.as_dict)
         self.write_file(sizing.as_dict)
