@@ -42,6 +42,10 @@ class RunMain(object):
         except Exception as err:
             raise OutputFileWriteError(f"can not write output file {self.output_file}: {err}")
 
+    @staticmethod
+    def fix_dict_key(text: str) -> str:
+        return text.replace('-', '_')
+
     def process(self):
         bucket_map = {}
         bucket_scope_map = {}
@@ -59,6 +63,8 @@ class RunMain(object):
                 bucket_name = item.ep_couch_bucket.split(" totals:")[0]
                 bucket = SizingClusterBucket.build(str(bucket_count), bucket_name, item)
                 bucket_map[bucket_name] = str(bucket_count)
+                if len(config.collections) == 0:
+                    config.default_collection(bucket_name, item.curr_items)
                 scope_set = set([c.scope_name for c in config.collections if c.bucket == bucket_name])
                 scopes = (list(scope_set))
                 scope_count = 0

@@ -31,6 +31,21 @@ class ClusterConfig(object):
             json_data.get("fts_slow_queries", []),
             )
 
+    def default_collection(self, bucket: str, items: int):
+        collection_data = {
+            "bucket": bucket,
+            "scope_name": "_default",
+            "collection_name": "_default",
+            "node": "",
+            "mem_used": 0,
+            "data_size": 0,
+            "items": items,
+            "ops_delete": 0,
+            "ops_get": 0,
+            "ops_store": 0
+        }
+        self.collections = [ClusterConfigCollections.from_config(collection_data)]
+
     @property
     def as_dict(self):
         return self.__dict__
@@ -257,7 +272,6 @@ class ClusterConfigIndexes(object):
     indexType = attr.ib(validator=io(str))
     definition = attr.ib(validator=io(str))
     secExprs = attr.ib(validator=io(str))
-    where = attr.ib(validator=io(str))
     partitioned = attr.ib(validator=io(bool))
     partitionId = attr.ib(validator=io(int))
     numPartition = attr.ib(validator=io(int))
@@ -303,6 +317,7 @@ class ClusterConfigIndexes(object):
     num_completed_requests_aggr = attr.ib(validator=io(int))
     num_rows_returned_aggr = attr.ib(validator=io(int))
     num_rows_scanned_aggr = attr.ib(validator=io(int))
+    where = attr.ib(default=None)
 
     @classmethod
     def from_config(cls, json_data: dict):
@@ -316,7 +331,6 @@ class ClusterConfigIndexes(object):
             json_data.get("indexType"),
             json_data.get("definition"),
             json_data.get("secExprs"),
-            json_data.get("where"),
             json_data.get("partitioned"),
             json_data.get("partitionId"),
             json_data.get("numPartition"),
@@ -362,6 +376,7 @@ class ClusterConfigIndexes(object):
             json_data.get("num_completed_requests_aggr"),
             json_data.get("num_rows_returned_aggr"),
             json_data.get("num_rows_scanned_aggr"),
+            json_data.get("where"),
             )
 
     @property
