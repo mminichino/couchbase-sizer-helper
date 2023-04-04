@@ -147,7 +147,7 @@ class ClusterConfigData(object):
             json_data.get("avg_cmd_get"),
             json_data.get("avg_cmd_set"),
             json_data.get("avg_delete_hits"),
-            json_data.get("avg_key_size"),
+            int(json_data.get("avg_key_size")),
             json_data.get("avg_value_size"),
             json_data.get("memory_utilization_percent"),
             json_data.get("resident_ratio"),
