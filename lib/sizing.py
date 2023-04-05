@@ -7,6 +7,7 @@ from attr.validators import instance_of as io
 import uuid
 from datetime import date
 from enum import Enum
+from lib.exceptions import DataError
 
 
 @attr.s
@@ -557,6 +558,18 @@ class SizingClusterBuckets(object):
         self.buckets.append(bucket)
         return self
 
+    def get_bucket(self, name: str):
+        for entry in self.buckets:
+            if entry["name"] == name:
+                return SizingClusterBucket.from_config(entry)
+        raise DataError(f"Bucket {name} not found")
+
+    def bucket_exists(self, name: str) -> bool:
+        for entry in self.buckets:
+            if entry["name"] == name:
+                return True
+        return False
+
     @property
     def as_dict(self):
         return self.__dict__
@@ -598,6 +611,30 @@ class SizingClusterBucket(object):
     scopes = attr.ib(validator=io(list))
 
     @classmethod
+    def from_config(cls, json_data: dict):
+        return cls(
+            json_data.get("id"),
+            json_data.get("name"),
+            json_data.get("description"),
+            json_data.get("bucket_type"),
+            json_data.get("storage_engine"),
+            json_data.get("eviction_policy"),
+            json_data.get("value_format"),
+            json_data.get("purge_frequency"),
+            json_data.get("number_replicas"),
+            json_data.get("default_compression"),
+            json_data.get("in_memory_compression_ratio"),
+            json_data.get("on_disk_compression_ratio"),
+            [SizingClusterScope.from_config(s) for s in json_data.get("scopes", [])],
+        )
+
+    def get_scope(self, name: str):
+        for scope in self.scopes:
+            if scope.name == name:
+                return scope
+        raise DataError(f"Scope {name} not found")
+
+    @classmethod
     def build(cls, bucket_id: str, name: str, config: ClusterConfigData):
         ratio = config.compression_ratio
         compression = ratio / 100
@@ -631,6 +668,20 @@ class SizingClusterScope(object):
     id = attr.ib(validator=io(str))
     name = attr.ib(validator=io(str))
     collections = attr.ib(validator=io(list))
+
+    @classmethod
+    def from_config(cls, json_data: dict):
+        return cls(
+            json_data.get("id"),
+            json_data.get("name"),
+            [SizingClusterCollection.from_config(c) for c in json_data.get("collections", [])],
+        )
+
+    def get_collection(self, name: str):
+        for collection in self.collections:
+            if collection.name == name:
+                return collection
+        raise DataError(f"Collection {name} not found")
 
     @classmethod
     def build(cls, scope_id: str, name: str):
@@ -671,7 +722,30 @@ class SizingClusterCollection(object):
     on_disk_compression_ratio = attr.ib(validator=io(float))
 
     @classmethod
-    def from_config(cls, collection_id: str, name: str, count: int, config: ClusterConfigData):
+    def from_config(cls, json_data: dict):
+        return cls(
+            json_data.get("id"),
+            json_data.get("name"),
+            json_data.get("description"),
+            json_data.get("total_documents_keys"),
+            json_data.get("working_set"),
+            json_data.get("avg_key_id_size"),
+            json_data.get("avg_document_size"),
+            json_data.get("read_ops_per_sec"),
+            json_data.get("write_ops_per_sec"),
+            json_data.get("delete_ops_per_sec"),
+            json_data.get("ttl_expiration"),
+            json_data.get("outbound_xdcr_streams"),
+            json_data.get("inbound_xdcr_streams"),
+            json_data.get("xdcr_active_active"),
+            json_data.get("uses_gsi"),
+            json_data.get("use_bucket_compression"),
+            json_data.get("in_memory_compression_ratio"),
+            json_data.get("on_disk_compression_ratio"),
+        )
+
+    @classmethod
+    def build(cls, collection_id: str, name: str, count: int, config: ClusterConfigData):
         ratio = config.compression_ratio
         compression = ratio / 100
         return cls(
@@ -756,16 +830,22 @@ class SizingClusterIndexEntry(object):
     array_index_size_of_each_element = attr.ib(validator=io(int))
     array_length = attr.ib(validator=io(int))
     number_replicas = attr.ib(validator=io(int))
-    percentage_documents_in_index = attr.ib(validator=io(int))
     avg_index_scans_per_sec = attr.ib(validator=io(int))
     plasma_key_size = attr.ib(validator=io(int))
     purge_ratio = attr.ib(validator=io(float))
     compression = attr.ib(validator=io(float))
     compression_ratio = attr.ib(validator=io(float))
     jemalloc_fragmentation = attr.ib(validator=io(float))
+    absolute_documents_in_index = attr.ib(validator=io(int))
 
     @classmethod
-    def from_config(cls, index_id: str, bucket: str, scope: str, collection: str, replica: int, config: ClusterConfigIndexes):
+    def from_config(cls,
+                    index_id: str,
+                    bucket: SizingClusterBucket,
+                    scope: SizingClusterScope,
+                    collection: SizingClusterCollection,
+                    replica: int,
+                    config: ClusterConfigIndexes):
         ratio = config.resident_percent
         resident_ratio = ratio / 100
         plasma_key_size = cls.calc_dist_value(config.key_size_distribution)
@@ -786,22 +866,22 @@ class SizingClusterIndexEntry(object):
             index_id,
             config.indexName,
             "Imported Index",
-            bucket,
-            scope,
-            collection,
+            bucket.id,
+            scope.id,
+            collection.id,
             primary_index,
-            resident_ratio,
-            total_secondary_bytes,
+            float(resident_ratio),
+            int(total_secondary_bytes),
             array_index_size_of_each_element,
             array_length,
             replica,
-            1,
             config.avg_scan_rate,
             plasma_key_size,
             0.2,
             0.5,
             0.25,
-            0.4
+            0.4,
+            config.items_count,
         )
 
     @staticmethod
@@ -851,10 +931,10 @@ class SizingClusterQuery(object):
     query = attr.ib(validator=io(dict))
 
     @classmethod
-    def create(cls):
+    def create(cls, ops: int):
         return cls(
             {
-                "simple_query_stale_ok": 0,
+                "simple_query_stale_ok": ops,
                 "simple_query_stale_false": 0,
                 "medium_query_stale_ok": 0,
                 "medium_query_stale_false": 0,

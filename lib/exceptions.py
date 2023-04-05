@@ -37,3 +37,7 @@ class InputFileReadError(FatalError):
 
 class OutputFileWriteError(FatalError):
     pass
+
+
+class DataError(FatalError):
+    pass
