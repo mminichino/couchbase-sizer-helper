@@ -45,7 +45,7 @@ class ClusterConfig(object):
             "ops_get": 0,
             "ops_store": 0
         }
-        self.collections = [ClusterConfigCollections.from_config(collection_data)]
+        self.collections.append(ClusterConfigCollections.from_config(collection_data))
 
     @property
     def as_dict(self):

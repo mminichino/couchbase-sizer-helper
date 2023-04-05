@@ -74,22 +74,28 @@ class RunMain(object):
         index_count = 0
 
         for config in config_list:
+            collections_null = False
+            if len(config.collections) == 0:
+                collections_null = True
             for item in config.data:
                 if item.ep_couch_bucket.endswith(" totals:"):
                     bucket_name = item.ep_couch_bucket.split(" totals:")[0]
+                    logger.debug(f"Processing bucket {bucket_name}")
                     bucket = SizingClusterBucket.build(str(bucket_count), bucket_name, item)
                     ops_sec += int(item.avg_cmd_get + item.avg_cmd_set)
-                    if len(config.collections) == 0:
+                    if collections_null:
                         config.default_collection(bucket_name, item.curr_items)
                     scope_set = set([c.scope_name for c in config.collections if c.bucket == bucket_name])
                     scopes = (list(scope_set))
                     scope_count = 0
                     for scope_name in scopes:
+                        logger.debug(f"Processing scope {scope_name}")
                         scope = SizingClusterScope.build(str(scope_count), scope_name)
                         collection_set = set([c.collection_name for c in config.collections if c.scope_name == scope_name])
                         collections = (list(collection_set))
                         collection_count = 0
                         for collection in collections:
+                            logger.debug(f"Processing collection {collection}")
                             collection_total = 0
                             for collection_item in config.collections:
                                 if collection_item.collection_name == collection and collection_item.scope_name == scope_name and collection_item.bucket == bucket_name:
