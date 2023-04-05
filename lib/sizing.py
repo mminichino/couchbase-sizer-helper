@@ -397,6 +397,20 @@ class SizingConfig(object):
     clusters = attr.ib(validator=io(list))
 
     @classmethod
+    def build(cls):
+        today = date.today()
+        return cls(
+            str(uuid.uuid4()),
+            "Sizing",
+            "",
+            "",
+            "",
+            today.strftime("%-m/%-d/%Y"),
+            "2.2.1",
+            [],
+        )
+
+    @classmethod
     def from_config(cls, cluster: dict):
         today = date.today()
         return cls(
@@ -409,6 +423,10 @@ class SizingConfig(object):
             "2.2.1",
             [cluster],
             )
+
+    def cluster(self, cluster: dict):
+        self.clusters.append(cluster)
+        return self
 
     @property
     def as_dict(self):

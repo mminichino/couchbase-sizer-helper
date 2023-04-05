@@ -19,37 +19,53 @@ VERSION = '1.1'
 class RunMain(object):
 
     def __init__(self, parameters):
-        self.input_file = parameters.input
+        self.input_files = parameters.input
         self.output_file = parameters.output
         self.name = parameters.name
         self.skip = parameters.skip
         self.cloud = parameters.cloud
         self.self_managed = parameters.self
 
-    def read_file(self, file_name: str) -> dict:
+        logger.info(f"Create Sizer Import ({VERSION})")
+
+        sizer_config = SizingConfig.build()
+
+        if parameters.combine:
+            cluster = self.process(1, self.input_files)
+            sizer_config.cluster(cluster)
+        else:
+            for count, input_file in enumerate(self.input_files):
+                cluster = self.process(count + 1, [input_file])
+                sizer_config.cluster(cluster)
+
+        self.write_file(sizer_config.as_dict, self.output_file)
+
+    @staticmethod
+    def read_file(file_name: str) -> dict:
         try:
             with open(file_name, 'r') as input_file:
                 return json.load(input_file)
         except Exception as err:
-            raise InputFileReadError(f"can not read sizing file {self.input_file}: {err}")
+            raise InputFileReadError(f"can not read sizing file {file_name}: {err}")
 
-    def write_file(self, data: dict) -> None:
+    @staticmethod
+    def write_file(data: dict, file_name: str) -> None:
         try:
-            with open(self.output_file, 'w') as output_file:
+            with open(file_name, 'w') as output_file:
                 json.dump(data, output_file, indent=2)
+                output_file.write("\n")
         except Exception as err:
-            raise OutputFileWriteError(f"can not write output file {self.output_file}: {err}")
+            raise OutputFileWriteError(f"can not write output file {file_name}: {err}")
 
-    def process(self):
+    def process(self, count: int, input_file_list: list[str]) -> dict:
         ops_sec = 0
         config_list = []
         epoch_time = datetime(1970, 1, 1)
 
-        logger.info(f"Create Sizer Import ({VERSION})")
-        for input_file in self.input_file:
+        for input_file in input_file_list:
             data = self.read_file(input_file)
             config_list.append(ClusterConfig.from_config(data))
-        cluster = SizingCluster.build(self.name, self.cloud, self.self_managed)
+        cluster = SizingCluster.build(f"{self.name}_{count}", self.cloud, self.self_managed)
         data = SizingClusterData.build()
         buckets = SizingClusterBuckets.build()
         index = SizingClusterIndex.build()
@@ -137,8 +153,7 @@ class RunMain(object):
             cluster.service(SizingClusterQuery.create(ops_sec).as_dict)
             cluster.service_group(SizingServiceGroup.create(["index", "query"], self.cloud).as_dict)
 
-        sizing = SizingConfig.from_config(cluster.as_dict)
-        self.write_file(sizing.as_dict)
+        return cluster.as_dict
 
 
 def main():
@@ -160,8 +175,7 @@ def main():
     screen_handler.setFormatter(CustomFormatter())
     logger.addHandler(screen_handler)
 
-    task = RunMain(parameters)
-    task.process()
+    RunMain(parameters)
 
 
 if __name__ == '__main__':
