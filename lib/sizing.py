@@ -10,6 +10,16 @@ from enum import Enum
 from lib.exceptions import DataError
 
 
+def positive(value):
+    if value < 0:
+        value = value * -1
+    return value
+
+
+def round_num(value):
+    return round(value, 2)
+
+
 @attr.s
 class ClusterConfig(object):
     data = attr.ib(validator=io(list))
@@ -88,14 +98,10 @@ class ClusterConfigData(object):
     mem_used = attr.ib(validator=attr.validators.instance_of((int, float)))
     stat_reset = attr.ib(validator=io(str))
     vb_active_curr_items = attr.ib(validator=attr.validators.instance_of((int, float)))
-    vb_active_itm_memory = attr.ib(validator=attr.validators.instance_of((int, float)))
-    vb_active_itm_memory_uncompressed = attr.ib(validator=attr.validators.instance_of((int, float)))
     vb_active_meta_data_memory = attr.ib(validator=attr.validators.instance_of((int, float)))
     vb_active_ops_delete = attr.ib(validator=attr.validators.instance_of((int, float)))
     vb_active_perc_mem_resident = attr.ib(validator=attr.validators.instance_of((int, float)))
     vb_replica_curr_items = attr.ib(validator=attr.validators.instance_of((int, float)))
-    vb_replica_itm_memory = attr.ib(validator=attr.validators.instance_of((int, float)))
-    vb_replica_itm_memory_uncompressed = attr.ib(validator=attr.validators.instance_of((int, float)))
     vb_replica_meta_data_memory = attr.ib(validator=attr.validators.instance_of((int, float)))
     vb_replica_ops_delete = attr.ib(validator=attr.validators.instance_of((int, float)))
     vb_replica_perc_mem_resident = attr.ib(validator=attr.validators.instance_of((int, float)))
@@ -110,6 +116,10 @@ class ClusterConfigData(object):
     compression_ratio = attr.ib(validator=attr.validators.instance_of((int, float)))
     metadata_utilization_percent = attr.ib(validator=attr.validators.instance_of((int, float)))
     total_metadata_memory = attr.ib(validator=attr.validators.instance_of((int, float)))
+    vb_active_itm_memory = attr.ib(validator=attr.validators.optional(attr.validators.instance_of((int, float))), default=None)
+    vb_active_itm_memory_uncompressed = attr.ib(validator=attr.validators.optional(attr.validators.instance_of((int, float))), default=None)
+    vb_replica_itm_memory = attr.ib(validator=attr.validators.optional(attr.validators.instance_of((int, float))), default=None)
+    vb_replica_itm_memory_uncompressed = attr.ib(validator=attr.validators.optional(attr.validators.instance_of((int, float))), default=None)
 
     @classmethod
     def from_config(cls, json_data: dict):
@@ -148,14 +158,10 @@ class ClusterConfigData(object):
             json_data.get("mem_used"),
             json_data.get("stat_reset"),
             json_data.get("vb_active_curr_items"),
-            json_data.get("vb_active_itm_memory"),
-            json_data.get("vb_active_itm_memory_uncompressed"),
             json_data.get("vb_active_meta_data_memory"),
             json_data.get("vb_active_ops_delete"),
             json_data.get("vb_active_perc_mem_resident"),
             json_data.get("vb_replica_curr_items"),
-            json_data.get("vb_replica_itm_memory"),
-            json_data.get("vb_replica_itm_memory_uncompressed"),
             json_data.get("vb_replica_meta_data_memory"),
             json_data.get("vb_replica_ops_delete"),
             json_data.get("vb_replica_perc_mem_resident"),
@@ -170,11 +176,16 @@ class ClusterConfigData(object):
             float(json_data.get("compression_ratio")),
             json_data.get("metadata_utilization_percent"),
             json_data.get("total_metadata_memory"),
+            json_data.get("vb_active_itm_memory"),
+            json_data.get("vb_active_itm_memory_uncompressed"),
+            json_data.get("vb_replica_itm_memory"),
+            json_data.get("vb_replica_itm_memory_uncompressed"),
             )
 
     @property
     def as_dict(self):
-        return self.__dict__
+        block = {k: v for k, v in self.__dict__.items() if v is not None}
+        return block
 
 
 @attr.s
@@ -725,10 +736,10 @@ class SizingClusterCollection(object):
     description = attr.ib(validator=io(str))
     total_documents_keys = attr.ib(validator=io(int))
     working_set = attr.ib(validator=io(float))
-    avg_key_id_size = attr.ib(validator=io(int))
-    avg_document_size = attr.ib(validator=io(int))
-    read_ops_per_sec = attr.ib(validator=io(float))
-    write_ops_per_sec = attr.ib(validator=io(float))
+    avg_key_id_size = attr.ib(validator=io(int), converter=positive)
+    avg_document_size = attr.ib(validator=io(int), converter=positive)
+    read_ops_per_sec = attr.ib(validator=io(float), converter=round_num)
+    write_ops_per_sec = attr.ib(validator=io(float), converter=round_num)
     delete_ops_per_sec = attr.ib(validator=io(float))
     ttl_expiration = attr.ib(validator=io(int))
     outbound_xdcr_streams = attr.ib(validator=io(int))
@@ -912,6 +923,8 @@ class SizingClusterIndexEntry(object):
         dist = ast.literal_eval(s)
         highest = [k for k, v in sorted(dist.items(), key=lambda item: item[1])][-1]
         value = highest.split('-')[-1].strip(')')
+        if value == 'max':
+            value = 102401
         return int(value)
 
     @property
