@@ -3,6 +3,7 @@
 
 import attr
 import ast
+import time
 from attr.validators import instance_of as io
 import uuid
 from datetime import date
@@ -289,7 +290,6 @@ class ClusterConfigIndexes(object):
     numPartition = attr.ib(validator=attr.validators.instance_of((int, float)))
     partitionMap = attr.ib(validator=io(str))
     replicaId = attr.ib(validator=attr.validators.instance_of((int, float)))
-    lastScanTime = attr.ib(validator=io(str))
     arrkey_size_distribution = attr.ib(validator=io(str))
     avg_array_length = attr.ib(validator=attr.validators.instance_of((int, float)))
     docid_count = attr.ib(validator=attr.validators.instance_of((int, float)))
@@ -304,9 +304,6 @@ class ClusterConfigIndexes(object):
     disk_size = attr.ib(validator=attr.validators.instance_of((int, float)))
     memory_used = attr.ib(validator=attr.validators.instance_of((int, float)))
     data_size = attr.ib(validator=attr.validators.instance_of((int, float)))
-    data_size_on_disk = attr.ib(validator=attr.validators.instance_of((int, float)))
-    log_space_on_disk = attr.ib(validator=attr.validators.instance_of((int, float)))
-    raw_data_size = attr.ib(validator=attr.validators.instance_of((int, float)))
     items_count = attr.ib(validator=attr.validators.instance_of((int, float)))
     avg_scan_rate = attr.ib(validator=attr.validators.instance_of((int, float)))
     avg_mutation_rate = attr.ib(validator=attr.validators.instance_of((int, float)))
@@ -315,12 +312,9 @@ class ClusterConfigIndexes(object):
     cache_misses = attr.ib(validator=attr.validators.instance_of((int, float)))
     recs_in_mem = attr.ib(validator=attr.validators.instance_of((int, float)))
     recs_on_disk = attr.ib(validator=attr.validators.instance_of((int, float)))
-    last_known_scan_time = attr.ib(validator=io(str))
     num_completed_requests = attr.ib(validator=attr.validators.instance_of((int, float)))
     avg_scan_latency = attr.ib(validator=attr.validators.instance_of((int, float)))
-    avg_item_size = attr.ib(validator=attr.validators.instance_of((int, float)))
     avg_scan_request_latency = attr.ib(validator=attr.validators.instance_of((int, float)))
-    key_size_stats_since = attr.ib(validator=io(str))
     resident_percent = attr.ib(validator=attr.validators.instance_of((int, float)))
     cache_hit_percent = attr.ib(validator=attr.validators.instance_of((int, float)))
     num_completed_requests_range = attr.ib(validator=attr.validators.instance_of((int, float)))
@@ -329,7 +323,14 @@ class ClusterConfigIndexes(object):
     num_completed_requests_aggr = attr.ib(validator=attr.validators.instance_of((int, float)))
     num_rows_returned_aggr = attr.ib(validator=attr.validators.instance_of((int, float)))
     num_rows_scanned_aggr = attr.ib(validator=attr.validators.instance_of((int, float)))
-    where = attr.ib(default=None)
+    where = attr.ib(validator=attr.validators.optional(io(str)), default=None)
+    lastScanTime = attr.ib(validator=attr.validators.optional(io(str)), default=None)
+    data_size_on_disk = attr.ib(validator=attr.validators.optional(attr.validators.instance_of((int, float))), default=None)
+    log_space_on_disk = attr.ib(validator=attr.validators.optional(attr.validators.instance_of((int, float))), default=None)
+    raw_data_size = attr.ib(validator=attr.validators.optional(attr.validators.instance_of((int, float))), default=None)
+    last_known_scan_time = attr.ib(validator=attr.validators.optional(io(str)), default=None)
+    avg_item_size = attr.ib(validator=attr.validators.optional(attr.validators.instance_of((int, float))), default=None)
+    key_size_stats_since = attr.ib(validator=attr.validators.optional(io(str)), default=None)
 
     @classmethod
     def from_config(cls, json_data: dict):
@@ -348,7 +349,6 @@ class ClusterConfigIndexes(object):
             json_data.get("numPartition"),
             json_data.get("partitionMap"),
             json_data.get("replicaId"),
-            json_data.get("lastScanTime"),
             json_data.get("arrkey_size_distribution"),
             json_data.get("avg_array_length"),
             json_data.get("docid_count"),
@@ -363,9 +363,6 @@ class ClusterConfigIndexes(object):
             json_data.get("disk_size"),
             json_data.get("memory_used"),
             json_data.get("data_size"),
-            json_data.get("data_size_on_disk"),
-            json_data.get("log_space_on_disk"),
-            json_data.get("raw_data_size"),
             json_data.get("items_count"),
             json_data.get("avg_scan_rate"),
             json_data.get("avg_mutation_rate"),
@@ -374,12 +371,9 @@ class ClusterConfigIndexes(object):
             json_data.get("cache_misses"),
             json_data.get("recs_in_mem"),
             json_data.get("recs_on_disk"),
-            json_data.get("last_known_scan_time"),
             json_data.get("num_completed_requests"),
             json_data.get("avg_scan_latency"),
-            json_data.get("avg_item_size"),
             json_data.get("avg_scan_request_latency"),
-            json_data.get("key_size_stats_since"),
             json_data.get("resident_percent"),
             json_data.get("cache_hit_percent"),
             json_data.get("num_completed_requests_range"),
@@ -389,6 +383,13 @@ class ClusterConfigIndexes(object):
             json_data.get("num_rows_returned_aggr"),
             json_data.get("num_rows_scanned_aggr"),
             json_data.get("where"),
+            json_data.get("lastScanTime"),
+            json_data.get("data_size_on_disk"),
+            json_data.get("log_space_on_disk"),
+            json_data.get("raw_data_size"),
+            json_data.get("last_known_scan_time", time.strftime('%Y-%m-%dT%H:%M:%S')),
+            json_data.get("avg_item_size"),
+            json_data.get("key_size_stats_since"),
             )
 
     @property
@@ -915,6 +916,8 @@ class SizingClusterIndexEntry(object):
 
     @staticmethod
     def calc_dist_value(text: str) -> int:
+        if len(text) == 0:
+            return 64
         s = text
         s = s.replace('(', '"(')
         s = s.replace(')', ')"')
