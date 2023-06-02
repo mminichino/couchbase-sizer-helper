@@ -4,13 +4,12 @@ SCRIPTDIR=$(cd $(dirname $0) && pwd)
 YUM_PKGS="python39"
 APT_PKGS="python3.9"
 MAC_PKGS="python@3.9"
-LEGACY_YUM_PKGS=""
 MAJOR_REV=3
 MINOR_REV=9
 VENV_NAME=venv
 YES=0
 FORCE=0
-BUILD_PYTHON=0
+INSTALL_PYTHON=0
 
 err_exit () {
    if [ -n "$1" ]; then
@@ -75,17 +74,6 @@ check_yum () {
       fi
     fi
   done
-  if [ $BUILD_PYTHON -eq 1 ]; then
-    which python3.9 >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
-      printf "Building and installing Python 3.9 ... "
-      sudo $SCRIPTDIR/install_python.sh >> setup.log 2>&1
-      [ $? -ne 0 ] && err_exit "Python build failed. See setup.log for more details."
-      echo "Done."
-    else
-      echo "Python 3.9 already installed."
-    fi
-  fi
 }
 
 check_apt () {
@@ -123,7 +111,7 @@ check_macos () {
       if [ $YES -eq 1 ]; then
         INPUT="y"
       else
-        printf "Install dependency ${package}? (y/n/s) [y]: "
+        printf "Install dependency %s? (y/n/s) [y]: " ${package}
         read INPUT
       fi
       if [ "$INPUT" = "s" ]; then
@@ -145,10 +133,6 @@ check_linux_by_type () {
   case $ID in
   centos|rhel)
     PKGMGR="yum"
-    if [ "$VERSION_ID" = "7" ]; then
-      YUM_PKGS=$LEGACY_YUM_PKGS
-      BUILD_PYTHON=1
-    fi
     check_yum
     ;;
   ubuntu)
@@ -183,18 +167,25 @@ done
 
 clear_log_file
 
+PY_MAJOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f1)
+PY_MINOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f2)
+
+if [ "$PY_MAJOR" -lt "$MAJOR_REV" ] || [ "$PY_MINOR" -lt "$MINOR_REV" ]; then
+  INSTALL_PYTHON=1
+fi
+
 SYSTEM_UNAME=$(uname -s)
 case "$SYSTEM_UNAME" in
     Linux*)
       machine=Linux
-      PYTHON_BIN=${PYTHON_BIN:-python3.9}
-      check_linux_by_type
+      PYTHON_BIN=${PYTHON_BIN:-python3}
+      [ "$INSTALL_PYTHON" -eq 1 ] && check_linux_by_type
       ;;
     Darwin*)
       machine=MacOS
-      check_macos
       BREW_PREFIX=$(brew --prefix)
-      PYTHON_BIN=${PYTHON_BIN:-python3.9}
+      PYTHON_BIN=${PYTHON_BIN:-python3}
+      [ "$INSTALL_PYTHON" -eq 1 ] && check_macos
       ;;
     CYGWIN*)
       machine=Cygwin
@@ -217,14 +208,6 @@ fi
 
 if [ ! -f requirements.txt ]; then
   echo "Missing requirements.txt"
-  exit 1
-fi
-
-PY_MAJOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f1)
-PY_MINOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f2)
-
-if [ "$PY_MAJOR" -lt "$MAJOR_REV" ] || [ "$PY_MINOR" -lt "$MINOR_REV" ]; then
-  echo "Python ${MAJOR_REV}.${MINOR_REV} or higher is required."
   exit 1
 fi
 
