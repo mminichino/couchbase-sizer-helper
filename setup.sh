@@ -133,11 +133,15 @@ check_linux_by_type () {
   case $ID in
   centos|rhel)
     PKGMGR="yum"
-    check_yum
+    [ "$INSTALL_PYTHON" -eq 1 ] && check_yum
     ;;
   ubuntu)
     PKGMGR="apt"
-    check_apt
+    [ "$INSTALL_PYTHON" -eq 1 ] && check_apt
+    if ! python3 -m ensurepip >/dev/null 2>&1
+    then
+      install_pkg python3-venv
+    fi
     ;;
   *)
     echo "Unknown Linux distribution $ID"
@@ -179,11 +183,11 @@ SYSTEM_UNAME=$(uname -s)
 case "$SYSTEM_UNAME" in
     Linux*)
       machine=Linux
-      [ "$INSTALL_PYTHON" -eq 1 ] && check_linux_by_type
+      check_linux_by_type
       ;;
     Darwin*)
       machine=MacOS
-      [ "$INSTALL_PYTHON" -eq 1 ] && check_macos
+      check_macos
       ;;
     CYGWIN*)
       machine=Cygwin
@@ -213,7 +217,7 @@ if [ -d $SCRIPTDIR/$VENV_NAME -a $FORCE -eq 0 ]; then
   echo "Virtual environment $SCRIPTDIR/$VENV_NAME already exists."
   printf "Remove the existing directory? (y/n) [y]:"
   read INPUT
-  if [ "$INPUT" == "y" -o -z "$INPUT" ]; then
+  if [ "$INPUT" = "y" ] || [ -z "$INPUT" ]; then
     [ -n "$SCRIPTDIR" ] && [ -n "$VENV_NAME" ] && rm -rf $SCRIPTDIR/$VENV_NAME
   else
     echo "Setup cancelled. No changes were made."
