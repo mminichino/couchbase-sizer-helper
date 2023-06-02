@@ -173,6 +173,7 @@ do
 done
 
 clear_log_file
+check_sudo
 
 PYTHON_BIN=${PYTHON_BIN_OPT:-python3}
 
@@ -206,8 +207,6 @@ case "$SYSTEM_UNAME" in
       exit 1
       ;;
 esac
-
-check_sudo
 
 if ! which "$PYTHON_BIN" >/dev/null 2>&1
 then
