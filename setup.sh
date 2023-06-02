@@ -20,7 +20,7 @@ err_exit () {
 }
 
 check_sudo () {
-  echo "Enter login password:"
+  echo "Checking sudo access (enter account login password if prompted)"
   sudo ls > /dev/null 2>&1
   [ $? -ne 0 ] && err_exit "Unable to sudo. Make sure sudo is install and you are authorized to use it."
 }
