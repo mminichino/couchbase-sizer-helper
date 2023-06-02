@@ -150,7 +150,7 @@ while getopts "p:yf" opt
 do
   case $opt in
     p)
-      PYTHON_BIN=$OPTARG
+      PYTHON_BIN_OPT=$OPTARG
       ;;
     y)
       YES=1
@@ -167,6 +167,7 @@ done
 
 clear_log_file
 
+PYTHON_BIN=${PYTHON_BIN_OPT:-python3}
 PY_MAJOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f1)
 PY_MINOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f2)
 
@@ -178,13 +179,10 @@ SYSTEM_UNAME=$(uname -s)
 case "$SYSTEM_UNAME" in
     Linux*)
       machine=Linux
-      PYTHON_BIN=${PYTHON_BIN:-python3}
       [ "$INSTALL_PYTHON" -eq 1 ] && check_linux_by_type
       ;;
     Darwin*)
       machine=MacOS
-      BREW_PREFIX=$(brew --prefix)
-      PYTHON_BIN=${PYTHON_BIN:-python3}
       [ "$INSTALL_PYTHON" -eq 1 ] && check_macos
       ;;
     CYGWIN*)
