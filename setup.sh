@@ -20,9 +20,10 @@ err_exit () {
 }
 
 check_sudo () {
-  echo "Checking sudo access (enter account login password if prompted)"
-  sudo ls > /dev/null 2>&1
-  [ $? -ne 0 ] && err_exit "Unable to sudo. Make sure sudo is install and you are authorized to use it."
+  if [ "$(id -u)" -ne 0 ]; then
+    echo "Checking sudo access (enter account login password if prompted)"
+    sudo ls > /dev/null 2>&1 || err_exit "Unable to sudo. Make sure sudo is install and you are authorized to use it."
+  fi
 }
 
 set_pip_bin () {
