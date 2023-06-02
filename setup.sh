@@ -1,6 +1,7 @@
 #!/bin/sh
 #
-SCRIPTDIR=$(cd $(dirname $0) && pwd)
+LOCAL_DIR=$(dirname "$0")
+SCRIPTDIR=$(cd "$LOCAL_DIR" && pwd)
 YUM_PKGS="python39"
 APT_PKGS="python3.9"
 MAC_PKGS="python@3.9"
@@ -63,8 +64,8 @@ check_yum () {
       if [ $YES -eq 1 ]; then
         INPUT="y"
       else
-        echo -n "Install dependency ${package}? (y/n) [y]:"
-        read INPUT
+        printf "Install dependency %s? (y/n) [y]:" ${package}
+        read -r INPUT
       fi
       if [ "$INPUT" = "y" ] || [ -z "$INPUT" ]; then
         install_pkg $package
@@ -84,8 +85,8 @@ check_apt () {
       if [ $YES -eq 1 ]; then
         INPUT="y"
       else
-        echo -n "Install dependency ${package}? (y/n) [y]:"
-        read INPUT
+        printf "Install dependency %s? (y/n) [y]:" ${package}
+        read -r INPUT
       fi
       if [ "$INPUT" = "y" ] || [ -z "$INPUT" ]; then
         install_pkg $package
@@ -112,7 +113,7 @@ check_macos () {
         INPUT="y"
       else
         printf "Install dependency %s? (y/n/s) [y]: " ${package}
-        read INPUT
+        read -r INPUT
       fi
       if [ "$INPUT" = "s" ]; then
         continue
@@ -172,8 +173,15 @@ done
 clear_log_file
 
 PYTHON_BIN=${PYTHON_BIN_OPT:-python3}
-PY_MAJOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f1)
-PY_MINOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f2)
+
+if which "$PYTHON_BIN" >/dev/null 2>&1
+then
+  PY_MAJOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f1)
+  PY_MINOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f2)
+else
+  PY_MAJOR="0"
+  PY_MINOR="0"
+fi
 
 if [ "$PY_MAJOR" -lt "$MAJOR_REV" ] || [ "$PY_MINOR" -lt "$MINOR_REV" ]; then
   INSTALL_PYTHON=1
@@ -182,16 +190,13 @@ fi
 SYSTEM_UNAME=$(uname -s)
 case "$SYSTEM_UNAME" in
     Linux*)
-      machine=Linux
       check_linux_by_type
       ;;
     Darwin*)
-      machine=MacOS
       check_macos
       ;;
     CYGWIN*)
-      machine=Cygwin
-      echo "Windows is not currently supported."
+      echo "Windows Cygwin is not currently supported. Please use WSL2 instead."
       exit 1
       ;;
     *)
@@ -202,9 +207,9 @@ esac
 
 check_sudo
 
-which $PYTHON_BIN >/dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo "Python 3 is required and $PYTHON_BIN should be in the execution search PATH."
+if ! which "$PYTHON_BIN" >/dev/null 2>&1
+then
+  echo "Setup failed. Python 3 not found. Please check the output and try again."
   exit 1
 fi
 
@@ -213,12 +218,12 @@ if [ ! -f requirements.txt ]; then
   exit 1
 fi
 
-if [ -d $SCRIPTDIR/$VENV_NAME -a $FORCE -eq 0 ]; then
+if [ -d "$SCRIPTDIR/$VENV_NAME" ] && [ $FORCE -eq 0 ]; then
   echo "Virtual environment $SCRIPTDIR/$VENV_NAME already exists."
   printf "Remove the existing directory? (y/n) [y]:"
-  read INPUT
+  read -r INPUT
   if [ "$INPUT" = "y" ] || [ -z "$INPUT" ]; then
-    [ -n "$SCRIPTDIR" ] && [ -n "$VENV_NAME" ] && rm -rf $SCRIPTDIR/$VENV_NAME
+    [ -n "$SCRIPTDIR" ] && [ -n "$VENV_NAME" ] && rm -rf "${SCRIPTDIR:?}/$VENV_NAME"
   else
     echo "Setup cancelled. No changes were made."
     exit 1
@@ -226,7 +231,7 @@ if [ -d $SCRIPTDIR/$VENV_NAME -a $FORCE -eq 0 ]; then
 fi
 
 printf "Creating virtual environment... "
-$PYTHON_BIN -m venv $SCRIPTDIR/$VENV_NAME
+$PYTHON_BIN -m venv "$SCRIPTDIR/$VENV_NAME"
 if [ $? -ne 0 ]; then
   echo "Virtual environment setup failed."
   exit 1
@@ -234,7 +239,8 @@ fi
 echo "Done."
 
 printf "Activating virtual environment... "
-. ${SCRIPTDIR:?}/${VENV_NAME:?}/bin/activate
+# shellcheck disable=SC1090
+. "${SCRIPTDIR:?}/${VENV_NAME:?}/bin/activate"
 echo "Done."
 
 set_pip_bin
@@ -244,7 +250,7 @@ $PYTHON_BIN -m pip install --upgrade pip setuptools wheel >> setup.log 2>&1
 $PIP_BIN install --no-cache-dir -r requirements.txt >> setup.log 2>&1
 if [ $? -ne 0 ]; then
   echo "Setup failed."
-  rm -rf ${SCRIPTDIR:?}/${VENV_NAME:?}
+  rm -rf "${SCRIPTDIR:?}/${VENV_NAME:?}"
   exit 1
 else
   echo "Done."
