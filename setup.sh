@@ -7,10 +7,12 @@ APT_PKGS="python3.9"
 MAC_PKGS="python@3.9"
 MAJOR_REV=3
 MINOR_REV=9
+PYTHON_INSTALL_BIN="python3.9"
 VENV_NAME=venv
 YES=0
 FORCE=0
 INSTALL_PYTHON=0
+VERBOSE=0
 
 err_exit () {
    if [ -n "$1" ]; then
@@ -107,6 +109,7 @@ check_macos () {
     echo "Please install Homebrew."
     exit 1
   fi
+  HOMEBREW_PREFIX=$(brew --prefix)
   for package in $MAC_PKGS
   do
     brew list $package >/dev/null 2>&1
@@ -128,6 +131,7 @@ check_macos () {
       fi
     fi
   done
+  PYTHON_BIN="${HOMEBREW_PREFIX}/bin/${PYTHON_INSTALL_BIN}"
 }
 
 check_linux_by_type () {
@@ -153,7 +157,7 @@ check_linux_by_type () {
   esac
 }
 
-while getopts "p:yf" opt
+while getopts "p:yfv" opt
 do
   case $opt in
     p)
@@ -164,6 +168,9 @@ do
       ;;
     f)
       FORCE=1
+      ;;
+    v)
+      VERBOSE=1
       ;;
     \?)
       echo "Invalid Argument"
@@ -181,6 +188,7 @@ if which "$PYTHON_BIN" >/dev/null 2>&1
 then
   PY_MAJOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f1)
   PY_MINOR=$($PYTHON_BIN --version | awk '{print $NF}' | cut -d. -f2)
+  [ "$VERBOSE" -eq 1 ] && echo "Found Python ${PY_MAJOR}.${PY_MINOR}"
 else
   PY_MAJOR="0"
   PY_MINOR="0"
@@ -188,6 +196,8 @@ fi
 
 if [ "$PY_MAJOR" -lt "$MAJOR_REV" ] || [ "$PY_MINOR" -lt "$MINOR_REV" ]; then
   INSTALL_PYTHON=1
+  PYTHON_BIN=$PYTHON_INSTALL_BIN
+  [ "$VERBOSE" -eq 1 ] && echo "Installing Python ${MAJOR_REV}.${MINOR_REV}"
 fi
 
 SYSTEM_UNAME=$(uname -s)
