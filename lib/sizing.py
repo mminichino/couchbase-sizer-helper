@@ -9,6 +9,7 @@ import uuid
 from datetime import date
 from enum import Enum
 from lib.exceptions import DataError
+from typing import Optional
 
 
 def positive(value):
@@ -192,13 +193,13 @@ class ClusterConfigData(object):
 @attr.s
 class ClusterConfigClients(object):
     username = attr.ib(validator=io(str))
-    bucket = attr.ib(validator=io(str))
-    bucket_index = attr.ib(validator=io(int))
-    agent_name = attr.ib(validator=io(str))
-    internal = attr.ib(validator=io(bool))
-    node = attr.ib(validator=io(str))
-    client_address = attr.ib(validator=io(str))
-    connections = attr.ib(validator=io(int))
+    bucket: Optional[str] = attr.ib(default=None)
+    bucket_index: Optional[int] = attr.ib(default=None)
+    agent_name: Optional[str] = attr.ib(default=None)
+    internal: Optional[bool] = attr.ib(default=None)
+    node: Optional[str] = attr.ib(default=None)
+    client_address: Optional[str] = attr.ib(default=None)
+    connections: Optional[int] = attr.ib(default=None)
 
     @classmethod
     def from_config(cls, json_data: dict):
