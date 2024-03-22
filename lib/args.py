@@ -26,6 +26,9 @@ class Parameters(object):
         parent_parser.add_argument('-v', '--verbose', action='store_true', help="Verbose output")
         parent_parser.add_argument('-B', '--bucket_ratio', action='store', help="Bucket residnet ratio")
         parent_parser.add_argument('-I', '--index_ratio', action='store', help="Index residnet ratio")
+        parent_parser.add_argument('--read', action='store', help="Read rate")
+        parent_parser.add_argument('--write', action='store', help="Write rate")
+        parent_parser.add_argument('--delete', action='store', help="Delete rate")
         parent_parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS, help='Show help message')
         self.parameters = parent_parser.parse_args()
 

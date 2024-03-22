@@ -776,10 +776,13 @@ class SizingClusterCollection(object):
         )
 
     @classmethod
-    def build(cls, collection_id: str, name: str, count: int, config: ClusterConfigData, resident_ratio: str = None):
+    def build(cls, collection_id: str, name: str, count: int, config: ClusterConfigData, resident_ratio: str = None, read: str = None, write: str = None, delete: str = None):
         ratio = config.compression_ratio
         compression = ratio / 100
         effective_resident_ratio = config.resident_ratio if not resident_ratio else int(resident_ratio)
+        read_ops_per_sec = config.avg_cmd_get if not read else read
+        write_ops_per_sec = config.avg_cmd_set if not write else write
+        delete_ops_per_sec = config.avg_delete_hits if not delete else delete
         return cls(
             collection_id,
             name,
@@ -788,9 +791,9 @@ class SizingClusterCollection(object):
             effective_resident_ratio / 100,
             int(config.avg_key_size),
             int(config.avg_value_size),
-            float(config.avg_cmd_get),
-            float(config.avg_cmd_set),
-            float(config.avg_delete_hits),
+            float(read_ops_per_sec),
+            float(write_ops_per_sec),
+            float(delete_ops_per_sec),
             0,
             0,
             0,

@@ -27,6 +27,9 @@ class RunMain(object):
         self.self_managed = parameters.self
         self.bucket_ratio = parameters.bucket_ratio
         self.index_ratio = parameters.index_ratio
+        self.read_rate = parameters.read
+        self.write_rate = parameters.write
+        self.delete_rate = parameters.delete
 
         logger.info(f"Create Sizer Import ({VERSION})")
 
@@ -102,7 +105,8 @@ class RunMain(object):
                             for collection_item in config.collections:
                                 if collection_item.collection_name == collection and collection_item.scope_name == scope_name and collection_item.bucket == bucket_name:
                                     collection_total += collection_item.items
-                            collection = SizingClusterCollection.build(str(collection_count), collection, collection_total, item, self.bucket_ratio)
+                            collection = SizingClusterCollection.build(str(collection_count), collection, collection_total, item,
+                                                                       self.bucket_ratio, self.read_rate, self.write_rate, self.delete_rate)
                             scope.collection(collection.as_dict)
                             collection_count += 1
                         bucket.scope(scope.as_dict)
