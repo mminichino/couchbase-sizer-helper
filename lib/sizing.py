@@ -776,15 +776,16 @@ class SizingClusterCollection(object):
         )
 
     @classmethod
-    def build(cls, collection_id: str, name: str, count: int, config: ClusterConfigData):
+    def build(cls, collection_id: str, name: str, count: int, config: ClusterConfigData, resident_ratio: str = None):
         ratio = config.compression_ratio
         compression = ratio / 100
+        effective_resident_ratio = config.resident_ratio if not resident_ratio else int(resident_ratio)
         return cls(
             collection_id,
             name,
             "Imported Collection",
             int(count),
-            config.resident_ratio / 100,
+            effective_resident_ratio / 100,
             int(config.avg_key_size),
             int(config.avg_value_size),
             float(config.avg_cmd_get),
@@ -876,8 +877,9 @@ class SizingClusterIndexEntry(object):
                     scope: SizingClusterScope,
                     collection: SizingClusterCollection,
                     replica: int,
-                    config: ClusterConfigIndexes):
-        ratio = config.resident_percent
+                    config: ClusterConfigIndexes,
+                    resident_ratio: str = None):
+        ratio = config.resident_percent if not resident_ratio else int(resident_ratio)
         resident_ratio = ratio / 100
         plasma_key_size = cls.calc_dist_value(config.key_size_distribution)
         if config.definition.startswith("CREATE PRIMARY INDEX"):

@@ -24,6 +24,8 @@ class Parameters(object):
         parent_parser.add_argument('-s', '--skip', action='store_true', help="Skip unused indexes")
         parent_parser.add_argument('-d', '--debug', action='store_true', help="Debug output")
         parent_parser.add_argument('-v', '--verbose', action='store_true', help="Verbose output")
+        parent_parser.add_argument('-B', '--bucket_ratio', action='store', help="Bucket residnet ratio")
+        parent_parser.add_argument('-I', '--index_ratio', action='store', help="Index residnet ratio")
         parent_parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS, help='Show help message')
         self.parameters = parent_parser.parse_args()
 
