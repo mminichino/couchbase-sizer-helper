@@ -163,7 +163,6 @@ class RunMain(object):
                 index_list.append(index_name)
             cluster.service(index.as_dict)
             cluster.service(SizingClusterQuery.create(ops_sec).as_dict)
-            cluster.service_group(SizingServiceGroup.create(["index", "query"], self.cloud).as_dict)
 
         return cluster.as_dict
 
