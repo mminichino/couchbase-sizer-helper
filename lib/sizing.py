@@ -859,19 +859,20 @@ class SizingClusterIndexEntry(object):
     bucket = attr.ib(validator=io(str))
     scope = attr.ib(validator=io(str))
     collection = attr.ib(validator=io(str))
+    absolute_documents_in_index = attr.ib(validator=io(int))
     primary_index = attr.ib(validator=io(bool))
+    default_index = attr.ib(validator=io(bool))
     resident_ratio = attr.ib(validator=io(float))
     total_secondary_bytes = attr.ib(validator=io(int))
-    array_index_size_of_each_element = attr.ib(validator=io(int))
+    rollback_points = attr.ib(validator=io(int))
+    mutation_ingest_rate = attr.ib(validator=io(int))
+    scan_rate = attr.ib(validator=io(int))
+    scans_timeout = attr.ib(validator=io(int))
+    array_index_elem_size = attr.ib(validator=io(int))
     array_length = attr.ib(validator=io(int))
+    size_of_nonarray_fields = attr.ib(validator=io(int))
     number_replicas = attr.ib(validator=io(int))
-    avg_index_scans_per_sec = attr.ib(validator=io(int))
     plasma_key_size = attr.ib(validator=io(int))
-    purge_ratio = attr.ib(validator=io(float))
-    compression = attr.ib(validator=io(float))
-    compression_ratio = attr.ib(validator=io(float))
-    jemalloc_fragmentation = attr.ib(validator=io(float))
-    absolute_documents_in_index = attr.ib(validator=io(int))
 
     @classmethod
     def from_config(cls,
@@ -881,9 +882,8 @@ class SizingClusterIndexEntry(object):
                     collection: SizingClusterCollection,
                     replica: int,
                     config: ClusterConfigIndexes,
-                    resident_ratio: str = None):
-        ratio = config.resident_percent if not resident_ratio else int(resident_ratio)
-        resident_ratio = ratio / 100
+                    working_set_ratio: int = 10):
+        resident_ratio = working_set_ratio / 100
         plasma_key_size = cls.calc_dist_value(config.key_size_distribution)
         if config.definition.startswith("CREATE PRIMARY INDEX"):
             primary_index = True
@@ -905,19 +905,20 @@ class SizingClusterIndexEntry(object):
             bucket.id,
             scope.id,
             collection.id,
+            config.items_count,
             primary_index,
+            False,
             float(resident_ratio),
             int(total_secondary_bytes),
+            0,
+            config.avg_mutation_rate,
+            config.avg_scan_rate,
+            0,
             array_index_size_of_each_element,
             array_length,
+            0,
             replica,
-            config.avg_scan_rate,
-            plasma_key_size,
-            0.2,
-            0.5,
-            0.25,
-            0.4,
-            config.items_count,
+            plasma_key_size
         )
 
     @staticmethod
