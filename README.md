@@ -4,5 +4,5 @@ Installation:
 pip install git+https://github.com/mminichino/couchbase-sizer-helper
 ```
 ```
-create_import -i import.json -o output.json
+create_import -i sizing.json -o import_file.json
 ```
