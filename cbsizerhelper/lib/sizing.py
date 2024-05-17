@@ -1,6 +1,7 @@
 ##
 ##
 
+import os
 import attr
 import ast
 import time
@@ -412,13 +413,17 @@ class SizingConfig(object):
     @classmethod
     def build(cls):
         today = date.today()
+        if os.name == 'nt':
+            date_str = today.strftime("%#m/%#d/%Y")
+        else:
+            date_str = today.strftime("%-m/%-d/%Y")
         return cls(
             str(uuid.uuid4()),
             "Sizing",
             "",
             "",
             "",
-            today.strftime("%-m/%-d/%Y"),
+            date_str,
             "2.2.1",
             [],
         )
