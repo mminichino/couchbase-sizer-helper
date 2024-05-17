@@ -65,7 +65,7 @@ class RunMain(object):
     def process(self, count: int, input_file_list: list[str]) -> dict:
         ops_sec = 0
         config_list = []
-        epoch_time = datetime(1970, 1, 1)
+        epoch_time = datetime(1970, 1, 1).replace(tzinfo=timezone.utc)
 
         for input_file in input_file_list:
             data = self.read_file(input_file)
