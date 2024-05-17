@@ -1,0 +1,59 @@
+[tool.poetry]
+name = "cbsizerhelper"
+description = "Sizer Helper"
+version = "1.0.0"
+readme = "README.md"
+authors = ["Michael Minichino <info@unix.us.com>"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+keywords = ["sizer", "helper"]
+packages = [
+    { include = "cbsizerhelper" }
+]
+
+[tool.poetry.urls]
+"Homepage" = "https://github.com/mminichino/couchbase-sizer-helper"
+
+[tool.poetry.scripts]
+create_import = "cbsizerhelper.create_import:main"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<4"
+attrs = ">=19.3.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.0"
+
+[tool.poetry.group.dev.dependencies]
+bumpversion = "^0.6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "-rE --no-header -v -p no:warnings"
+log_file = "pytest.log"
+log_file_level = "DEBUG"
+pythonpath = [
+    ".",
+    "tests"
+]
+testpaths = [
+    "tests",
+]
+python_classes = [
+    "Test*"
+]
+python_files = [
+    "test_[0-9]*.py"
+]

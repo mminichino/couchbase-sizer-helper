@@ -5,15 +5,15 @@ import warnings
 import sys
 import logging
 from datetime import datetime
-from lib.args import Parameters
-from lib.logging import CustomFormatter
-from lib.exceptions import InputFileReadError, OutputFileWriteError
-from lib.sizing import (ClusterConfig, SizingConfig, SizingCluster, SizingClusterData, SizingClusterBuckets, SizingClusterBucket, SizingClusterScope, SizingClusterCollection,
-                        SizingClusterIndex, SizingClusterIndexEntry, SizingClusterPlasmaIndexes, SizingClusterQuery, SizingServiceGroup)
+from cbsizerhelper import __version__ as VERSION
+from cbsizerhelper.lib.args import Parameters
+from cbsizerhelper.lib.logging import CustomFormatter
+from cbsizerhelper.lib.exceptions import InputFileReadError, OutputFileWriteError
+from cbsizerhelper.lib.sizing import (ClusterConfig, SizingConfig, SizingCluster, SizingClusterData, SizingClusterBuckets, SizingClusterBucket, SizingClusterScope,
+                                      SizingClusterCollection, SizingClusterIndex, SizingClusterIndexEntry, SizingClusterPlasmaIndexes, SizingClusterQuery, SizingServiceGroup)
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger()
-VERSION = '1.1'
 
 
 class RunMain(object):

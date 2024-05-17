@@ -8,7 +8,7 @@ from attr.validators import instance_of as io
 import uuid
 from datetime import date
 from enum import Enum
-from lib.exceptions import DataError
+from cbsizerhelper.lib.exceptions import DataError
 from typing import Optional
 
 
