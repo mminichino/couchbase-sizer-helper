@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "cbsizerhelper"
 description = "Sizer Helper"
-version = "1.0.1"
+version = "1.0.2"
 readme = "README.md"
 authors = ["Michael Minichino <info@unix.us.com>"]
 classifiers = [

@@ -4,7 +4,7 @@ import json
 import warnings
 import sys
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from cbsizerhelper import __version__ as VERSION
 from cbsizerhelper.lib.args import Parameters
 from cbsizerhelper.lib.logging import CustomFormatter
@@ -119,7 +119,7 @@ class RunMain(object):
                 for item in config.indexes:
                     if item.replicaId > 0:
                         continue
-                    last_scanned = datetime.strptime(item.last_known_scan_time, '%Y-%m-%dT%H:%M:%S')
+                    last_scanned = datetime.strptime(item.last_known_scan_time, '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
                     if (last_scanned.timestamp() - epoch_time.timestamp()) == 0:
                         if self.skip:
                             continue
