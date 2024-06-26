@@ -442,7 +442,9 @@ class SizingConfig(object):
             "",
             "",
             today.strftime("%-m/%-d/%Y"),
-            "2.2.1",
+            "3.0.1",
+            1,
+            False,
             [cluster],
             )
 
@@ -879,26 +881,26 @@ class SizingClusterPlasmaIndexes(object):
 
 @attr.s
 class SizingClusterIndexEntry(object):
-    id = attr.ib(validator=io(str))
-    name = attr.ib(validator=io(str))
-    description = attr.ib(validator=io(str))
-    bucket = attr.ib(validator=io(str))
-    scope = attr.ib(validator=io(str))
-    collection = attr.ib(validator=io(str))
-    absolute_documents_in_index = attr.ib(validator=io(int))
-    primary_index = attr.ib(validator=io(bool))
-    default_index = attr.ib(validator=io(bool))
-    resident_ratio = attr.ib(validator=io(float))
-    total_secondary_bytes = attr.ib(validator=io(int))
-    rollback_points = attr.ib(validator=io(int))
-    mutation_ingest_rate = attr.ib(validator=io(int))
-    scan_rate = attr.ib(validator=io(int))
-    scans_timeout = attr.ib(validator=io(int))
-    array_index_elem_size = attr.ib(validator=io(int))
-    array_length = attr.ib(validator=io(int))
-    size_of_nonarray_fields = attr.ib(validator=io(int))
-    number_replicas = attr.ib(validator=io(int))
-    plasma_key_size = attr.ib(validator=io(int))
+    id: Optional[str] = attr.ib(default="0")
+    name: Optional[str] = attr.ib(default="Index")
+    description: Optional[str] = attr.ib(default="")
+    bucket: Optional[str] = attr.ib(default="0")
+    scope: Optional[str] = attr.ib(default="0")
+    collection: Optional[str] = attr.ib(default="0")
+    absolute_documents_in_index: Optional[int] = attr.ib(default=0)
+    primary_index: Optional[bool] = attr.ib(default=False)
+    default_index: Optional[bool] = attr.ib(default=False)
+    resident_ratio: Optional[float] = attr.ib(default=0.1)
+    total_secondary_bytes: Optional[int] = attr.ib(default=0)
+    rollback_points: Optional[int] = attr.ib(default=2)
+    mutation_ingest_rate: Optional[int] = attr.ib(default=0)
+    scan_rate: Optional[int] = attr.ib(default=0)
+    scans_timeout: Optional[int] = attr.ib(default=120)
+    array_index_elem_size: Optional[int] = attr.ib(default=0)
+    array_length: Optional[int] = attr.ib(default=0)
+    size_of_nonarray_fields: Optional[int] = attr.ib(default=0)
+    number_replicas: Optional[int] = attr.ib(default=1)
+    plasma_key_size: Optional[int] = attr.ib(default=0)
 
     @classmethod
     def from_config(cls,
@@ -1056,6 +1058,67 @@ class SizingServiceGroup(object):
             services,
             CloudHardware[cloud].value
         )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingSearch(object):
+    indexes: Optional[list] = attr.ib(default=[])
+    config: Optional[dict] = attr.ib(default={})
+
+    @classmethod
+    def default(cls):
+        return cls(
+            [SearchIndex().as_dict],
+            SearchConfig().as_dict
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SearchIndex(object):
+    id: Optional[str] = attr.ib(default="0")
+    name: Optional[str] = attr.ib(default="Index")
+    description: Optional[str] = attr.ib(default="")
+    bucket: Optional[str] = attr.ib(default="0")
+    scope: Optional[str] = attr.ib(default="0")
+    collection: Optional[str] = attr.ib(default="0")
+    field_name: Optional[str] = attr.ib(default="")
+    index_type: Optional[str] = attr.ib(default="Text")
+    index: Optional[bool] = attr.ib(default=False)
+    store: Optional[bool] = attr.ib(default=False)
+    include_in_all_fields: Optional[bool] = attr.ib(default=False)
+    include_term_vectors: Optional[bool] = attr.ib(default=False)
+    docvalues: Optional[bool] = attr.ib(default=False)
+    num_partitions: Optional[int] = attr.ib(default=1)
+    percentage_documents_in_index: Optional[int] = attr.ib(default=0)
+    analyzer: Optional[str] = attr.ib(default="Keyword")
+    num_of_replica: Optional[int] = attr.ib(default=0)
+    max_size: Optional[int] = attr.ib(default=0)
+    max_from: Optional[int] = attr.ib(default=0)
+    scans_per_sec: Optional[int] = attr.ib(default=0)
+    avg_key_size: Optional[int] = attr.ib(default=0)
+    avg_field_length: Optional[int] = attr.ib(default=0)
+    rollback_points: Optional[int] = attr.ib(default=4)
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SearchConfig(object):
+    os_mem_reserved: Optional[float] = attr.ib(default=0.2)
+    minimum_number_of_cores: Optional[int] = attr.ib(default=8)
+    disk_space_buffer: Optional[float] = attr.ib(default=0.3)
+    core_headroom: Optional[float] = attr.ib(default=0.2)
+    memory_growth_headroom: Optional[float] = attr.ib(default=0.1)
 
     @property
     def as_dict(self):

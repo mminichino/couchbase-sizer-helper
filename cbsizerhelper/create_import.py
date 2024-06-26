@@ -133,6 +133,8 @@ class RunMain(object):
                     index_entry = SizingClusterIndexEntry.from_config(str(index_count), bucket, scope, collection, replicas, item, self.index_ratio)
                     indexes.index(index_entry.as_dict)
                     index_count += 1
+            else:
+                indexes.index(SizingClusterIndexEntry().as_dict)
 
         bucket_list = []
         for count, bucket in enumerate(buckets.buckets):
