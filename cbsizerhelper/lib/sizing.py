@@ -408,6 +408,8 @@ class SizingConfig(object):
     username = attr.ib(validator=io(str))
     date = attr.ib(validator=io(str))
     sizing_version = attr.ib(validator=io(str))
+    version = attr.ib(validator=io(int))
+    archived = attr.ib(validator=io(bool))
     clusters = attr.ib(validator=io(list))
 
     @classmethod
@@ -424,7 +426,9 @@ class SizingConfig(object):
             "",
             "",
             date_str,
-            "2.2.1",
+            "3.0.1",
+            1,
+            False,
             [],
         )
 
@@ -530,8 +534,22 @@ class CloudHardware(Enum):
 
 
 @attr.s
+class BackupConfig(object):
+    backup_enabled: Optional[bool] = attr.ib(default=True)
+    retention_period: Optional[int] = attr.ib(default=30)
+    full_frequency: Optional[str] = attr.ib(default="Daily")
+    incremental_frequency: Optional[int] = attr.ib(default=4)
+    daily_change_rate: Optional[float] = attr.ib(default=0.05)
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
 class SizingCluster(object):
     id = attr.ib(validator=io(str))
+    is_basic = attr.ib(validator=io(bool))
     name = attr.ib(validator=io(str))
     type = attr.ib(validator=io(str))
     couchbase_version = attr.ib(validator=io(str))
@@ -539,11 +557,12 @@ class SizingCluster(object):
     cloud_region = attr.ib(validator=io(str))
     capella_plan = attr.ib(validator=io(str))
     infrastructure = attr.ib(validator=io(str))
+    cloud_service = attr.ib(validator=io(str))
     operating_system = attr.ib(validator=io(str))
     capella_credits = attr.ib(validator=io(int))
+    backup = attr.ib(validator=io(dict))
     services = attr.ib(validator=io(dict))
     service_groups = attr.ib(validator=io(list))
-    cloud_service = attr.ib(default=None)
 
     @classmethod
     def build(cls, name: str, cloud: str, self_managed: bool):
@@ -553,6 +572,7 @@ class SizingCluster(object):
             cluster_type = ClusterType.CAPELLA.value
         return cls(
             str(uuid.uuid4()),
+            False,
             name,
             cluster_type,
             ClusterVersion.V7_1.value,
@@ -560,11 +580,12 @@ class SizingCluster(object):
             CloudRegion[cloud].value,
             CapellaPlan.PRO.value,
             ClusterInfrastructure[cloud].value,
+            CloudService[cloud].value,
             "Linux",
             0,
+            BackupConfig().as_dict,
             {},
-            [],
-            CloudService[cloud].value
+            []
             )
 
     def service(self, service: dict):

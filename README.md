@@ -1,4 +1,4 @@
-# couchbase-sizer-helper 1.0.3
+# couchbase-sizer-helper 1.0.4
 Installation:
 ```
 pip install git+https://github.com/mminichino/couchbase-sizer-helper

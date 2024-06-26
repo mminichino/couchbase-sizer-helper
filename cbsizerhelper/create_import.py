@@ -70,7 +70,7 @@ class RunMain(object):
         for input_file in input_file_list:
             data = self.read_file(input_file)
             config_list.append(ClusterConfig.from_config(data))
-        cluster = SizingCluster.build(f"{self.name}_{count}", self.cloud, self.self_managed)
+        cluster = SizingCluster.build(f"{self.name}{count}", self.cloud, self.self_managed)
         data = SizingClusterData.build()
         buckets = SizingClusterBuckets.build()
         index = SizingClusterIndex.build()
