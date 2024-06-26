@@ -1123,3 +1123,236 @@ class SearchConfig(object):
     @property
     def as_dict(self):
         return self.__dict__
+
+
+@attr.s
+class SizingEventing(object):
+    functions: Optional[list] = attr.ib(default=[])
+    config: Optional[dict] = attr.ib(default={})
+
+    @classmethod
+    def default(cls):
+        return cls(
+            [EventingFunction().as_dict],
+            EventingConfig().as_dict
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class EventingFunction(object):
+    id: Optional[str] = attr.ib(default="0")
+    bucket: Optional[str] = attr.ib(default="0")
+    scope: Optional[str] = attr.ib(default="0")
+    collection: Optional[str] = attr.ib(default="0")
+    name: Optional[str] = attr.ib(default="Function")
+    description: Optional[str] = attr.ib(default="")
+    number_of_handlers: Optional[int] = attr.ib(default=1)
+    number_of_workers: Optional[int] = attr.ib(default=1)
+    function_intensity_cpu_factor: Optional[int] = attr.ib(default=1)
+    destination_bucket: Optional[str] = attr.ib(default="")
+    percentage_documents_satisfying_condition: Optional[int] = attr.ib(default=0)
+    number_of_read_ops_per_execution: Optional[int] = attr.ib(default=0)
+    read_avg_key_id_size: Optional[int] = attr.ib(default=0)
+    read_avg_document_size: Optional[int] = attr.ib(default=0)
+    number_of_write_ops_per_execution: Optional[int] = attr.ib(default=0)
+    write_avg_key_id_size: Optional[int] = attr.ib(default=0)
+    write_avg_document_size: Optional[int] = attr.ib(default=0)
+    number_of_delete_ops_per_execution: Optional[int] = attr.ib(default=0)
+    delete_avg_key_id_size: Optional[int] = attr.ib(default=0)
+    number_of_timers_created_per_execution: Optional[int] = attr.ib(default=0)
+    avg_timer_context_size: Optional[int] = attr.ib(default=0)
+    number_of_n1ql_queries_per_execution: Optional[int] = attr.ib(default=0)
+    avg_n1ql_query_size: Optional[int] = attr.ib(default=0)
+    avg_n1ql_query_latency: Optional[int] = attr.ib(default=0)
+    avg_n1ql_query_response_size: Optional[int] = attr.ib(default=0)
+    number_of_log_statements_per_execution: Optional[int] = attr.ib(default=0)
+    log_avg_message_size: Optional[int] = attr.ib(default=0)
+    number_of_curl_statements_per_execution: Optional[int] = attr.ib(default=0)
+    avg_curl_latency: Optional[int] = attr.ib(default=0)
+    avg_curl_request_body_size: Optional[int] = attr.ib(default=0)
+    avg_curl_response_size: Optional[int] = attr.ib(default=0)
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class EventingConfig(object):
+    os_mem_reserved: Optional[float] = attr.ib(default=0.2)
+    minimum_number_of_cores: Optional[int] = attr.ib(default=8)
+    disk_space_buffer: Optional[float] = attr.ib(default=0.3)
+    core_headroom: Optional[float] = attr.ib(default=0.2)
+    memory_growth_headroom: Optional[float] = attr.ib(default=0.1)
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingAnalytics(object):
+    number_replicas: Optional[int] = attr.ib(default=1)
+    collections: Optional[list] = attr.ib(default=[])
+    indexes: Optional[list] = attr.ib(default=[])
+    config: Optional[dict] = attr.ib(default={})
+
+    @classmethod
+    def default(cls):
+        return cls(
+            1,
+            [AnalyticsCollection().as_dict],
+            [AnalyticsIndex().as_dict],
+            AnalyticsConfig().as_dict
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class AnalyticsCollection(object):
+    id: Optional[str] = attr.ib(default="0")
+    name: Optional[str] = attr.ib(default="collection")
+    description: Optional[str] = attr.ib(default="")
+    bucket: Optional[str] = attr.ib(default="0")
+    scope: Optional[str] = attr.ib(default="0")
+    collection: Optional[str] = attr.ib(default="0")
+    percentage_documents_in_collection: Optional[int] = attr.ib(default=0)
+    query_temp_space_allowance: Optional[int] = attr.ib(default=2)
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class AnalyticsIndex(object):
+    id: Optional[str] = attr.ib(default="0")
+    name: Optional[str] = attr.ib(default="index")
+    description: Optional[str] = attr.ib(default="")
+    analytics_collection: Optional[str] = attr.ib(default="0")
+    total_secondary_bytes: Optional[int] = attr.ib(default=0)
+    percentage_documents_in_index: Optional[int] = attr.ib(default=0)
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class AnalyticsConfig(object):
+    os_mem_reserved: Optional[float] = attr.ib(default=0.2)
+    minimum_number_of_cores: Optional[int] = attr.ib(default=8)
+    disk_space_buffer: Optional[float] = attr.ib(default=0.3)
+    core_headroom: Optional[float] = attr.ib(default=0.2)
+    memory_growth_headroom: Optional[float] = attr.ib(default=0.1)
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SizingAppServices(object):
+    databases: Optional[list] = attr.ib(default=[])
+
+    @classmethod
+    def default(cls):
+        return cls(
+            [AppServiceDatabase().as_dict]
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class AppServiceDatabase(object):
+    id: Optional[int] = attr.ib(default=0)
+    name: Optional[str] = attr.ib(default="Database")
+    bucket: Optional[str] = attr.ib(default="0")
+    scope: Optional[str] = attr.ib(default="0")
+    collection: Optional[str] = attr.ib(default="0")
+    num_of_docs: Optional[int] = attr.ib(default=0)
+    writes_per_sec: Optional[int] = attr.ib(default=0)
+    reads_per_sec: Optional[int] = attr.ib(default=0)
+    deletes_per_sec: Optional[int] = attr.ib(default=0)
+    num_of_channels: Optional[int] = attr.ib(default=0)
+    avg_docs_per_channel: Optional[int] = attr.ib(default=0)
+    client_connections: Optional[int] = attr.ib(default=0)
+    version: Optional[str] = attr.ib(default="3.0")
+    num_of_users: Optional[int] = attr.ib(default=0)
+    avg_channels_per_user: Optional[int] = attr.ib(default=0)
+    num_of_roles: Optional[int] = attr.ib(default=0)
+    avg_channels_per_role: Optional[int] = attr.ib(default=0)
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class SearchService(object):
+    search = attr.ib(validator=io(dict))
+
+    @classmethod
+    def default(cls):
+        return cls(
+            SizingSearch().default().as_dict
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class EventingService(object):
+    eventing = attr.ib(validator=io(dict))
+
+    @classmethod
+    def default(cls):
+        return cls(
+            SizingEventing().default().as_dict
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class AnalyticsService(object):
+    analytics = attr.ib(validator=io(dict))
+
+    @classmethod
+    def default(cls):
+        return cls(
+            SizingAnalytics().default().as_dict
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__
+
+
+@attr.s
+class AppServices(object):
+    app_services = attr.ib(validator=io(dict))
+
+    @classmethod
+    def default(cls):
+        return cls(
+            SizingAppServices().default().as_dict
+        )
+
+    @property
+    def as_dict(self):
+        return self.__dict__

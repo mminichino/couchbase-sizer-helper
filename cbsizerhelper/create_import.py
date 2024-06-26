@@ -10,7 +10,8 @@ from cbsizerhelper.lib.args import Parameters
 from cbsizerhelper.lib.logging import CustomFormatter
 from cbsizerhelper.lib.exceptions import InputFileReadError, OutputFileWriteError
 from cbsizerhelper.lib.sizing import (ClusterConfig, SizingConfig, SizingCluster, SizingClusterData, SizingClusterBuckets, SizingClusterBucket, SizingClusterScope,
-                                      SizingClusterCollection, SizingClusterIndex, SizingClusterIndexEntry, SizingClusterPlasmaIndexes, SizingClusterQuery, SizingServiceGroup)
+                                      SizingClusterCollection, SizingClusterIndex, SizingClusterIndexEntry, SizingClusterPlasmaIndexes, SizingClusterQuery, SizingServiceGroup,
+                                      SearchService, EventingService, AnalyticsService, AppServices)
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger()
@@ -165,6 +166,11 @@ class RunMain(object):
                 index_list.append(index_name)
             cluster.service(index.as_dict)
             cluster.service(SizingClusterQuery.create(ops_sec).as_dict)
+
+        cluster.service(SearchService.default().as_dict)
+        cluster.service(EventingService.default().as_dict)
+        cluster.service(AnalyticsService.default().as_dict)
+        cluster.service(AppServices.default().as_dict)
 
         return cluster.as_dict
 
