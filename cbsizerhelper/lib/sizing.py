@@ -691,7 +691,7 @@ class SizingClusterBucket(object):
         for scope in self.scopes:
             if scope.name == name:
                 return scope
-        raise DataError(f"Scope {name} not found")
+        return None
 
     @classmethod
     def build(cls, bucket_id: str, name: str, config: ClusterConfigData):

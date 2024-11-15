@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "cbsizerhelper"
 description = "Sizer Helper"
-version = "1.0.5"
+version = "1.0.6"
 readme = "README.md"
 authors = ["Michael Minichino <info@unix.us.com>"]
 classifiers = [
@@ -28,13 +28,14 @@ create_import = "cbsizerhelper.create_import:main"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4"
-attrs = ">=19.3.0"
+attrs = ">=23.3.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.0"
 
 [tool.poetry.group.dev.dependencies]
 bumpversion = "^0.6.0"
+poetry-core = ">=1.9.0"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 
+import os
 import json
 import warnings
 import sys
 import logging
+import logging.handlers
+from pathlib import Path
 from datetime import datetime, timezone
 from cbsizerhelper import __version__ as VERSION
 from cbsizerhelper.lib.args import Parameters
-from cbsizerhelper.lib.logging import CustomFormatter
+from cbsizerhelper.lib.logging import CustomDisplayFormatter, CustomLogFormatter
 from cbsizerhelper.lib.exceptions import InputFileReadError, OutputFileWriteError
 from cbsizerhelper.lib.sizing import (ClusterConfig, SizingConfig, SizingCluster, SizingClusterData, SizingClusterBuckets, SizingClusterBucket, SizingClusterScope,
                                       SizingClusterCollection, SizingClusterIndex, SizingClusterIndexEntry, SizingClusterPlasmaIndexes, SizingClusterQuery, SizingServiceGroup,
@@ -32,7 +35,7 @@ class RunMain(object):
         self.write_rate = parameters.write
         self.delete_rate = parameters.delete
 
-        logger.info(f"Create Sizer Import ({VERSION})")
+        logger.info(f"Create Sizer Import Utility ({VERSION})")
 
         sizer_config = SizingConfig.build()
 
@@ -95,13 +98,15 @@ class RunMain(object):
                     scopes = (list(scope_set))
                     scope_count = 0
                     for scope_name in scopes:
+                        if scope_name == "_system":
+                            continue
                         logger.debug(f"Processing scope {scope_name}")
                         scope = SizingClusterScope.build(str(scope_count), scope_name)
                         collection_set = set([c.collection_name for c in config.collections if c.scope_name == scope_name])
                         collections = (list(collection_set))
                         collection_count = 0
                         for collection in collections:
-                            logger.debug(f"Processing collection {collection}")
+                            logger.info(f"Processing keyspace {bucket_name}.{scope_name}.{collection}")
                             collection_total = 0
                             for collection_item in config.collections:
                                 if collection_item.collection_name == collection and collection_item.scope_name == scope_name and collection_item.bucket == bucket_name:
@@ -116,6 +121,8 @@ class RunMain(object):
                     bucket_count += 1
 
             if len(config.indexes) > 0:
+                index_table = {}
+                logger.debug(f"Found {len(config.indexes)} index record(s)")
                 replica_set = set([i.indexName for i in config.indexes if i.replicaId > 0])
                 for item in config.indexes:
                     if item.replicaId > 0:
@@ -124,16 +131,44 @@ class RunMain(object):
                     if (last_scanned.timestamp() - epoch_time.timestamp()) == 0:
                         if self.skip:
                             continue
-                    bucket = buckets.get_bucket(item.bucket)
-                    scope = bucket.get_scope(item.scope)
-                    collection = scope.get_collection(item.collection)
-                    if any(i.startswith(item.indexName) for i in replica_set):
-                        replicas = 1
-                    else:
-                        replicas = 0
-                    index_entry = SizingClusterIndexEntry.from_config(str(index_count), bucket, scope, collection, replicas, item, self.index_ratio)
-                    indexes.index(index_entry.as_dict)
-                    index_count += 1
+                    if item.scope == "_system":
+                        logger.debug(f"Skipping index scope {item.scope}")
+                        continue
+                    keyspace = f"{item.bucket}.{item.scope}.{item.collection}"
+                    if not index_table.get(keyspace):
+                        index_table[keyspace] = {}
+                    if not index_table[keyspace].get(item.indexName):
+                        index_table[keyspace][item.indexName] = {}
+                        index_table[keyspace][item.indexName]['records'] = []
+                    index_table[keyspace][item.indexName]['records'].append(item)
+
+                    # index_entry = SizingClusterIndexEntry.from_config(str(index_count), bucket, scope, collection, replicas, item, self.index_ratio)
+                    # logger.debug(f"Processing index {bucket.name}.{scope.name}.{collection.name}.{index_entry.name}")
+                    # indexes.index(index_entry.as_dict)
+                    # index_count += 1
+
+                for _keyspace, _indexes in index_table.items():
+                    logger.debug(f"Index keyspace {_keyspace}:")
+                    for _index_name, _index_data in index_table[_keyspace].items():
+                        _index_data['summary'] = _index_data['records'][0]
+                        if len(_index_data['records']) > 1:
+                            _items_count = sum(_item.items_count for _item in _index_data['records'])
+                            _index_data['summary'].items_count = _items_count
+
+                        bucket = buckets.get_bucket(_index_data['summary'].bucket)
+                        scope = bucket.get_scope(_index_data['summary'].scope)
+                        collection = scope.get_collection(_index_data['summary'].collection)
+                        if any(i.startswith(_index_data['summary'].indexName) for i in replica_set):
+                            replicas = 1
+                        else:
+                            replicas = 0
+
+                        index_entry = SizingClusterIndexEntry.from_config(str(index_count), bucket, scope, collection, replicas, _index_data['summary'], self.index_ratio)
+                        logger.info(f"Adding index {index_count + 1} ({_index_name}) from keyspace {_keyspace}")
+                        indexes.index(index_entry.as_dict)
+                        index_count += 1
+
+                logger.info(f"Processed {len(indexes.indexes)} indexes")
             else:
                 indexes.index(SizingClusterIndexEntry().as_dict)
 
@@ -179,6 +214,7 @@ def main():
     global logger
     arg_parser = Parameters()
     parameters = arg_parser.args
+    debug_file = os.path.join(Path.home(), "cbsizerhelper.log")
 
     try:
         if parameters.debug:
@@ -191,8 +227,15 @@ def main():
         pass
 
     screen_handler = logging.StreamHandler()
-    screen_handler.setFormatter(CustomFormatter())
+    screen_handler.setFormatter(CustomDisplayFormatter())
+    screen_handler.setLevel(logging.INFO)
     logger.addHandler(screen_handler)
+
+    file_handler = logging.FileHandler(debug_file, mode="w")
+    file_handler.setFormatter(CustomLogFormatter())
+    logger.addHandler(file_handler)
+
+    logger.setLevel(logging.DEBUG)
 
     RunMain(parameters)
 
